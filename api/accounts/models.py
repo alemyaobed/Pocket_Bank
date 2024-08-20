@@ -28,12 +28,13 @@ class BaseEntityManager(BaseUserManager):
 
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('tax_identifier_number', 'DEFAULT_TIN')
         extra_fields.setdefault('date_of_birth', '2000-01-01')
-        extra_fields.setdefault('branch', Branch.objects.filter(id=1))
+        extra_fields.setdefault('branch', Branch.objects.first())
         extra_fields.setdefault('phone_number', '000-000-0000')
         extra_fields.setdefault('address', 'Default Address')
-        extra_fields.setdefault('entity_type', EntityType.objects.filter(id=1))
+        extra_fields.setdefault('entity_type', EntityType.objects.first())
 
 
         if extra_fields.get('is_staff') is not True:
