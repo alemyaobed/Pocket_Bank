@@ -7,7 +7,7 @@ class Account(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     account_name = models.CharField(max_length=40)
     account_number = models.CharField(max_length=20, unique=True)
-    entity = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
+    owner = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE, null=False)
     account_type = models.ForeignKey('AccountType', on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -68,6 +68,7 @@ class Branch(models.Model):
     address = models.TextField()
     branch_code = models.CharField(max_length=20)
     phone_number = models.CharField(max_length=20)
+    manager = models.ForeignKey('accounts.Employee', on_delete=models.SET_NULL, null=True, related_name='managed_branches')
 
     def __str__(self):
         return self.name
