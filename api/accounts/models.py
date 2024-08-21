@@ -46,7 +46,6 @@ class BaseEntityManager(BaseUserManager):
 
 
 class BaseEntity(AbstractBaseUser, PermissionsMixin):
-# class BaseEntity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     full_name = models.CharField(max_length=100)
     username = models.CharField(max_length=50, unique=True)

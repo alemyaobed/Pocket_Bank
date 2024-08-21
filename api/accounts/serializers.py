@@ -19,7 +19,7 @@ class EntityTypeSerializer(ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class DepartmentSerializer(serializers.ModelSerializer):
+class DepartmentSerializer(ModelSerializer):
     class Meta:
         model = Department
         fields = '__all__'
@@ -29,7 +29,10 @@ class DepartmentSerializer(serializers.ModelSerializer):
 class BaseEntitySerializer(ModelSerializer):
     class Meta:
         model = BaseEntity
-        fields = '__all__'
+        fields = ['id', 'full_name', 'username', 'email', 'entity_type', 'address', 
+                  'phone_number', 'branch', 'is_active', 'is_staff', 'date_of_birth',
+                  'last_login', 'created_at', 'updated_at', 'tax_identifier_number', 
+                  'first_name', 'last_name', 'password']
         read_only_fields = ['id', 'last_login', 'created_at', 'updated_at']
         extra_kwargs = {
             'password': {'write_only': True}
@@ -48,6 +51,7 @@ class EmployeeSerializer(BaseEntitySerializer):
     class Meta(BaseEntitySerializer.Meta):
         model = Employee
         fields = BaseEntitySerializer.Meta.fields + ['position', 'role', 'salary', 'department']
+        extra_kwargs = BaseEntitySerializer.Meta.extra_kwargs
 
 
 class RoleSerializer(ModelSerializer):

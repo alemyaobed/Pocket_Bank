@@ -28,7 +28,7 @@ class Account(models.Model):
     def __str__(self):
         return self.account_name
 
-# 2. Status
+
 class Status(models.Model):
     status_name = models.CharField(max_length=20)
 
@@ -55,14 +55,14 @@ class Transaction(models.Model):
     def __str__(self):
         return f'Transaction {self.id}'
 
-# 5. Transaction_type
+
 class TransactionType(models.Model):
     type_name = models.CharField(max_length=40)
 
     def __str__(self):
         return self.type_name
 
-# 6. Branch
+
 class Branch(models.Model):
     name = models.CharField(max_length=100)
     address = models.TextField()
@@ -73,7 +73,7 @@ class Branch(models.Model):
     def __str__(self):
         return self.name
 
-# 7. Loans
+
 class Loan(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     from_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='loans_given')
@@ -94,14 +94,14 @@ class Loan(models.Model):
     def __str__(self):
         return f'Loan {self.id}'
 
-# 8. Loan_type
+
 class LoanType(models.Model):
     type_name = models.CharField(max_length=40)
 
     def __str__(self):
         return self.type_name
 
-# 9. Loan_terms
+
 class LoanTerms(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     entity = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
@@ -118,14 +118,13 @@ class LoanTerms(models.Model):
     def __str__(self):
         return f'Terms for {self.loan_type}'
 
-# 10. Interest_rate_type
+
 class InterestRateType(models.Model):
     type_name = models.CharField(max_length=40)
 
     def __str__(self):
         return self.type_name
 
-# 11. Investments
 class Investment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     from_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='investments_given')
@@ -142,7 +141,7 @@ class Investment(models.Model):
     def __str__(self):
         return f'Investment {self.id}'
 
-# 12. Loan_payments
+
 class LoanPayment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     paid_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
@@ -157,7 +156,7 @@ class LoanPayment(models.Model):
     def __str__(self):
         return f'Loan Payment {self.id}'
 
-# 13. Investment_crediting
+
 class InvestmentCrediting(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     transaction = models.ForeignKey('Transaction', on_delete=models.CASCADE)
@@ -171,8 +170,6 @@ class InvestmentCrediting(models.Model):
         return f'Investment Crediting {self.id}'
 
 
-
-# 18. Audits
 class Audit(models.Model):
     entity = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
     action = models.CharField(max_length=50)
@@ -184,7 +181,7 @@ class Audit(models.Model):
     def __str__(self):
         return f'Audit {self.id}'
 
-# 19. Assets
+
 class Asset(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
@@ -199,7 +196,7 @@ class Asset(models.Model):
     def __str__(self):
         return self.name
 
-# 20. Capital
+
 class Capital(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
@@ -214,7 +211,7 @@ class Capital(models.Model):
     def __str__(self):
         return self.name
 
-# 21. Liabilities
+
 class Liability(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
@@ -230,7 +227,6 @@ class Liability(models.Model):
         return self.name
 
 
-# 23. Annual_balances
 class AnnualBalance(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     assets_opening_balance = models.FloatField()
@@ -248,14 +244,13 @@ class AnnualBalance(models.Model):
         return f'Annual Balance for {self.accounting_year}'
 
 
-# 25. Transaction_direction
 class TransactionDirection(models.Model):
     direction_name = models.CharField(max_length=40)
 
     def __str__(self):
         return self.direction_name
 
-# 26. Account_type
+
 class AccountType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -265,7 +260,7 @@ class AccountType(models.Model):
     def __str__(self):
         return self.type_name
 
-# 27. Investment_type
+
 class InvestmentType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -275,7 +270,7 @@ class InvestmentType(models.Model):
     def __str__(self):
         return self.type_name
 
-# 28. Asset_type
+
 class AssetType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -285,7 +280,7 @@ class AssetType(models.Model):
     def __str__(self):
         return self.type_name
 
-# 29. Capital_type
+
 class CapitalType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -295,7 +290,7 @@ class CapitalType(models.Model):
     def __str__(self):
         return self.type_name
 
-# 30. Liability_type
+
 class LiabilityType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -305,7 +300,7 @@ class LiabilityType(models.Model):
     def __str__(self):
         return self.type_name
 
-# 31. Income
+
 class Income(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     income_type = models.ForeignKey('IncomeType', on_delete=models.CASCADE)
@@ -316,7 +311,7 @@ class Income(models.Model):
     def __str__(self):
         return f'Income {self.id}'
 
-# 32. Income_type
+
 class IncomeType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -326,7 +321,7 @@ class IncomeType(models.Model):
     def __str__(self):
         return self.type_name
 
-# 33. Expenses
+
 class Expense(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     expense_type = models.ForeignKey('ExpenseType', on_delete=models.CASCADE)
@@ -337,7 +332,7 @@ class Expense(models.Model):
     def __str__(self):
         return f'Expense {self.id}'
 
-# 34. Expense_type
+
 class ExpenseType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
