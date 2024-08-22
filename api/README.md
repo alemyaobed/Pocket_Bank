@@ -1,7 +1,18 @@
-
 # Pocket Bank API
 
 Pocket Bank is a comprehensive banking application built with Django Rest Framework (DRF). It offers a secure and scalable platform for personal and business banking needs, including account management, transaction tracking, loan and investment management, and financial reporting.
+
+## Table of Contents
+
+1. [Project Structure](#project-structure)
+2. [Features](#features)
+3. [Technologies Used](#technologies-used)
+4. [Setup and Installation](#setup-and-installation)
+5. [API Endpoints](#api-endpoints)
+6. [Swagger Documentation](#swagger-documentation)
+7. [Usage Examples](#usage-examples)
+8. [Contributing](#contributing)
+9. [Contact](#contact)
 
 ## Project Structure
 
@@ -126,6 +137,30 @@ The API will be available at `http://127.0.0.1:8000/`.
 - **PUT /api/investments/{id}/**: Update investment details.
 - **DELETE /api/investments/{id}/**: Delete an investment.
 
+## Swagger Documentation
+
+You can access the full API documentation via Swagger UI at:
+
+```
+http://127.0.0.1:8000/api/v1/swagger/
+```
+
+This interactive interface allows you to explore and test the API endpoints with ease.
+
+## Usage Examples
+
+### Get Account Details
+
+```bash
+curl -X GET "http://127.0.0.1:8000/api/accounts/1/" -H "accept: application/json"
+```
+
+### Create a New Transaction
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/transactions/" -H "accept: application/json" -H "Content-Type: application/json" -d "{\"account\": 1, \"amount\": 100.00, \"transaction_type\": \"deposit\"}"
+```
+
 ## Contributing
 
 We welcome contributions to the Pocket Bank API. Please follow these steps to contribute:
@@ -135,8 +170,6 @@ We welcome contributions to the Pocket Bank API. Please follow these steps to co
 3. Make your changes and commit them with descriptive messages.
 4. Push your changes to your forked repository.
 5. Open a pull request to the main repository.
-
-
 
 ## Contact
 
