@@ -1,7 +1,7 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, SlugRelatedField, SerializerMethodField
 from .models import (
     Employee, EntityType, BaseEntity, Notification, Document,
-    Department, Role,
+    Department, Role, Branch,
     )
 
 class EntityTypeSerializer(ModelSerializer):
@@ -19,19 +19,12 @@ class EntityTypeSerializer(ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class DepartmentSerializer(ModelSerializer):
-    class Meta:
-        model = Department
-        fields = '__all__'
-        read_only_fields = ['created_at', 'updated_at']
-
-
 class BaseEntitySerializer(ModelSerializer):
     class Meta:
         model = BaseEntity
-        fields = ['id', 'full_name', 'username', 'email', 'entity_type', 'address', 
+        fields = ['id', 'full_name', 'username', 'email', 'entity_type', 'address',
                   'phone_number', 'branch', 'is_active', 'is_staff', 'date_of_birth',
-                  'last_login', 'created_at', 'updated_at', 'tax_identifier_number', 
+                  'last_login', 'created_at', 'updated_at', 'tax_identifier_number',
                   'first_name', 'last_name', 'password']
         read_only_fields = ['id', 'last_login', 'created_at', 'updated_at']
         extra_kwargs = {
@@ -47,17 +40,29 @@ class BaseEntitySerializer(ModelSerializer):
         return instance
 
 
+class RoleSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = '__all__'
+
+
+class BranchSerializer(ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = '__all__'
+
+
+class DepartmentSerializer(ModelSerializer):
+    class Meta:
+        model = Department
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at']
+
 class EmployeeSerializer(BaseEntitySerializer):
     class Meta(BaseEntitySerializer.Meta):
         model = Employee
         fields = BaseEntitySerializer.Meta.fields + ['position', 'role', 'salary', 'department']
         extra_kwargs = BaseEntitySerializer.Meta.extra_kwargs
-
-
-class RoleSerializer(ModelSerializer):
-    class Meta:
-        model = Role
-        fields = '__all__'
 
 
 class DocumentSerializer(ModelSerializer):

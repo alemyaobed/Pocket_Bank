@@ -14,7 +14,7 @@ class Account(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     closed_at = models.DateTimeField(blank=True, null=True)
     current_balance = models.FloatField()
-    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
     status = models.ForeignKey('Status', on_delete=models.CASCADE)
 
     def save(self, *args, **kwargs):
@@ -48,7 +48,7 @@ class Transaction(models.Model):
     transaction_amount = models.FloatField()
     status = models.ForeignKey('Status', on_delete=models.CASCADE)
     external_reference = models.CharField(max_length=100, blank=True, null=True)
-    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
     transaction_direction = models.ForeignKey('TransactionDirection', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -61,17 +61,6 @@ class TransactionType(models.Model):
 
     def __str__(self):
         return self.type_name
-
-
-class Branch(models.Model):
-    name = models.CharField(max_length=100)
-    address = models.TextField()
-    branch_code = models.CharField(max_length=20)
-    phone_number = models.CharField(max_length=20)
-    manager = models.ForeignKey('accounts.Employee', on_delete=models.SET_NULL, null=True, related_name='managed_branches')
-
-    def __str__(self):
-        return self.name
 
 
 class Loan(models.Model):
@@ -184,7 +173,7 @@ class Audit(models.Model):
 
 class Asset(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     value = models.FloatField()
     updated_balance = models.FloatField()
@@ -199,7 +188,7 @@ class Asset(models.Model):
 
 class Capital(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     value = models.FloatField()
     updated_balance = models.FloatField()
@@ -214,7 +203,7 @@ class Capital(models.Model):
 
 class Liability(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     value = models.FloatField()
     updated_balance = models.FloatField()
@@ -238,7 +227,7 @@ class AnnualBalance(models.Model):
     accounting_year = models.CharField(max_length=10)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
 
     def __str__(self):
         return f'Annual Balance for {self.accounting_year}'

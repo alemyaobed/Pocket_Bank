@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from core.models import (Status, TransactionType, Branch, LoanType, InterestRateType,
+from core.models import (Status, TransactionType, LoanType, InterestRateType,
                          TransactionDirection, AccountType, InvestmentType, AssetType,
                          CapitalType, LiabilityType, IncomeType, ExpenseType,)
 
@@ -22,7 +22,6 @@ class Command(BaseCommand):
         liability_types = ['Short-term Debt', 'Long-term Debt', 'Accounts Payable', 'Accrued Expenses', 'Deferred Tax']
         income_types = ['Fee charges', 'Business Income', 'Interest Income', 'Rental Income', 'Investment Income']
         expense_types = ['Utilities', 'Salaries', 'Rent', 'Office Supplies', 'Travel']
-        branches = ['Kumasi', 'Accra', 'Tamale', 'Ho', 'Mampong', 'Wa']
 
 
         # Define a list of statuses
@@ -69,15 +68,6 @@ class Command(BaseCommand):
         # Insert transaction types
         for type_name in transaction_types:
             TransactionType.objects.create(type_name=type_name)
-
-        # Insert fake data into Branch
-        for branch in branches:
-            Branch.objects.create(
-                name=branch,
-                address=fake.address(),
-                branch_code=fake.bothify(text='??-###'),
-                phone_number=fake.phone_number()
-            )
 
         # Insert data into LoanType
         for type_name in loan_types:

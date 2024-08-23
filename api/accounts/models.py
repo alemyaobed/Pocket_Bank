@@ -24,8 +24,6 @@ class BaseEntityManager(BaseUserManager):
         return user
 
     def create_superuser(self, username, email, password=None, **extra_fields):
-        from core.models import Branch
-
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
@@ -53,7 +51,7 @@ class BaseEntity(AbstractBaseUser, PermissionsMixin):
     entity_type = models.ForeignKey('EntityType', on_delete=models.SET_NULL, null=True)
     address = models.TextField(blank=False, null=False)
     phone_number = models.CharField(max_length=20, unique=True, null=False)
-    branch = models.ForeignKey('core.Branch', on_delete=models.SET_NULL, null=True, related_name='employees')
+    branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, related_name='employees')
     is_active = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     date_of_birth = models.DateField(null=False, blank=False)
@@ -100,7 +98,7 @@ class Department(models.Model):
     head_of_department = models.ForeignKey('Employee', on_delete=models.SET_NULL, null=True, related_name='managed_departments')
     location = models.CharField(max_length=100)
     telephone = models.CharField(max_length=20)
-    branch = models.ForeignKey('core.Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('Branch', on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
@@ -109,7 +107,7 @@ class Department(models.Model):
 class Document(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=100)
-    entity = models.ForeignKey('BaseEntity', on_delete=models.CASCADE)
+    owner = models.ForeignKey('BaseEntity', on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -126,3 +124,14 @@ class Notification(models.Model):
 
     def __str__(self):
         return f'Notification {self.id}'
+
+
+class Branch(models.Model):
+    name = models.CharField(max_length=100)
+    address = models.TextField()
+    branch_code = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=20)
+    manager = models.ForeignKey('Employee', on_delete=models.SET_NULL, null=True, related_name='managed_branches')
+
+    def __str__(self):
+        return self.name
