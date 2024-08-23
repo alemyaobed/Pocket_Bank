@@ -1,5 +1,8 @@
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+
+from accounts.serializers import BaseEntitySerializer, BranchSerializer, EntityTypeSerializer
 from .models import (
     Account, AccountType, AnnualBalance, Asset, AssetType, Audit,
     Capital, CapitalType, Expense, ExpenseType, Income, IncomeType,
@@ -19,12 +22,162 @@ from .serializers import (
 )
 
 class AccountViewSet(ModelViewSet):
-    queryset = Account.objects.all()
+    """
+    A viewset for viewing and editing Account instances.
+
+    list:
+    Return a list of all Account instances with detailed information including related fields.
+
+    retrieve:
+    Return a specific Account instance by its ID with detailed information including related fields.
+    """
+    queryset = Account.objects.select_related(
+        'owner', 'account_type', 'branch', 'status'
+    ).all()
     serializer_class = AccountSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific Account instance and include full details of the related 'owner', 'account_type',
+        'branch', and 'status' fields.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including 'owner', 'account_type', 'branch', and 'status'.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        data['owner'] = self.get_base_entity_details(instance.owner)
+        data['account_type'] = AccountTypeSerializer(instance.account_type).data if instance.account_type else None
+        data['branch'] = BranchSerializer(instance.branch).data if instance.branch else None
+        data['status'] = StatusSerializer(instance.status).data if instance.status else None
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all Account instances and include full details of the related 'owner', 'account_type',
+        'branch', and 'status' fields for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including 'owner', 'account_type', 'branch', and 'status' for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        for item, instance in zip(data, queryset):
+            item['owner'] = self.get_base_entity_details(instance.owner)
+            item['account_type'] = AccountTypeSerializer(instance.account_type).data if instance.account_type else None
+            item['branch'] = BranchSerializer(instance.branch).data if instance.branch else None
+            item['status'] = StatusSerializer(instance.status).data if instance.status else None
+        return Response(data)
+
+    def get_base_entity_details(self, base_entity):
+        """
+        Retrieve detailed information of a BaseEntity, including its related fields.
+
+        Args:
+            base_entity: The BaseEntity instance to be detailed.
+
+        Returns:
+            dict: The serialized data of the BaseEntity including related fields.
+        """
+        if base_entity:
+            serializer = BaseEntitySerializer(base_entity)
+            data = serializer.data
+            # Assume that BaseEntity has 'branch' and 'entity_type' related fields
+            data['branch'] = BranchSerializer(base_entity.branch).data if base_entity.branch else None
+            data['entity_type'] = EntityTypeSerializer(base_entity.entity_type).data if base_entity.entity_type else None
+            return data
+        return None
 
 class AccountTypeViewSet(ModelViewSet):
-    queryset = AccountType.objects.all()
+    """
+    A viewset for viewing and editing AccountType instances.
+
+    list:
+    Return a list of all AccountType instances with detailed information including the related 'updated_by' field.
+
+    retrieve:
+    Return a specific AccountType instance by its ID with detailed information including the related 'updated_by' field.
+    """
+    queryset = AccountType.objects.select_related('updated_by').all()
     serializer_class = AccountTypeSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific AccountType instance and include full details of the related 'updated_by' field.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including the 'updated_by' field.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        # Serialize the 'updated_by' field if it exists
+        if instance.updated_by:
+            data['updated_by'] = self.get_base_entity_details(instance.updated_by)
+        else:
+            data['updated_by'] = None
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all AccountType instances and include full details of the related 'updated_by' field for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including the 'updated_by' field for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        # Add full details of 'updated_by' field for each item
+        for item, instance in zip(data, queryset):
+            if instance.updated_by:
+                item['updated_by'] = self.get_base_entity_details(instance.updated_by)
+            else:
+                item['updated_by'] = None
+        return Response(data)
+
+    def get_base_entity_details(self, base_entity):
+        """
+        Retrieve detailed information of a BaseEntity, including its related fields.
+
+        Args:
+            base_entity: The BaseEntity instance to be detailed.
+
+        Returns:
+            dict: The serialized data of the BaseEntity including related fields.
+        """
+        if base_entity:
+            serializer = BaseEntitySerializer(base_entity)
+            data = serializer.data
+            # Assume that BaseEntity has 'branch' and 'entity_type' related fields
+            data['branch'] = BranchSerializer(base_entity.branch).data if base_entity.branch else None
+            data['entity_type'] = EntityTypeSerializer(base_entity.entity_type).data if base_entity.entity_type else None
+            return data
+        return None
 
 class AnnualBalanceViewSet(ModelViewSet):
     queryset = AnnualBalance.objects.all()

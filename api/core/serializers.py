@@ -5,8 +5,6 @@ from .models import (
     Income, IncomeType, InterestRateType, Investment, InvestmentCrediting,
     InvestmentType, Liability, LiabilityType, Loan, LoanPayment, LoanTerms,
     LoanType, Status, TransactionDirection, Transaction, TransactionType)
-from accounts.serializers import BaseEntitySerializer, BranchSerializer
-
 
 
 class StatusSerializer(ModelSerializer):
@@ -34,9 +32,6 @@ class InterestRateTypeSerializer(ModelSerializer):
 
 
 class LoanTermsSerializer(ModelSerializer):
-    entity = BaseEntitySerializer()
-    loan_type = LoanTypeSerializer()
-    interest_rate_type = InterestRateTypeSerializer()
     class Meta:
         model = LoanTerms
         fields = '__all__'
@@ -44,7 +39,6 @@ class LoanTermsSerializer(ModelSerializer):
 
 
 class AuditSerializer(ModelSerializer):
-    entity = BaseEntitySerializer()
     class Meta:
         model = Audit
         fields = '__all__'
@@ -52,8 +46,6 @@ class AuditSerializer(ModelSerializer):
 
 
 class AnnualBalanceSerializer(ModelSerializer):
-    branch = BranchSerializer()
-
     class Meta:
         model = AnnualBalance
         fields = '__all__'
@@ -67,8 +59,6 @@ class TransactionDirectionSerializer(ModelSerializer):
 
 
 class AccountTypeSerializer(ModelSerializer):
-    updated_by = BaseEntitySerializer()
-
     class Meta:
         model = AccountType
         fields = '__all__'
@@ -76,8 +66,6 @@ class AccountTypeSerializer(ModelSerializer):
 
 
 class InvestmentTypeSerializer(ModelSerializer):
-    updated_by = BaseEntitySerializer()
-
     class Meta:
         model = InvestmentType
         fields = '__all__'
@@ -85,8 +73,6 @@ class InvestmentTypeSerializer(ModelSerializer):
 
 
 class AssetTypeSerializer(ModelSerializer):
-    updated_by = BaseEntitySerializer()
-
     class Meta:
         model = AssetType
         fields = '__all__'
@@ -94,8 +80,6 @@ class AssetTypeSerializer(ModelSerializer):
 
 
 class CapitalTypeSerializer(ModelSerializer):
-    updated_by = BaseEntitySerializer()
-
     class Meta:
         model = CapitalType
         fields = '__all__'
@@ -103,16 +87,12 @@ class CapitalTypeSerializer(ModelSerializer):
 
 
 class LiabilityTypeSerializer(ModelSerializer):
-    updated_by = BaseEntitySerializer()
-
     class Meta:
         model = LiabilityType
         fields = '__all__'
         read_only_fields = ['created_at', 'updated_at']
 
 class IncomeTypeSerializer(ModelSerializer):
-    updated_by = BaseEntitySerializer()
-
     class Meta:
         model = IncomeType
         fields = '__all__'
@@ -120,11 +100,6 @@ class IncomeTypeSerializer(ModelSerializer):
 
 
 class AccountSerializer(ModelSerializer):
-    owner = BaseEntitySerializer()
-    account_type = AccountTypeSerializer()
-    branch = BranchSerializer()
-    status = StatusSerializer()
-
     class Meta:
         model = Account
         fields = '__all__'
@@ -132,14 +107,6 @@ class AccountSerializer(ModelSerializer):
 
 
 class TransactionSerializer(ModelSerializer):
-    sender_account = AccountSerializer()
-    receiver_account = AccountSerializer()
-    transaction_type = TransactionTypeSerializer()
-    initiated_by = BaseEntitySerializer()
-    status = StatusSerializer()
-    branch = BranchSerializer()
-    transaction_direction = TransactionDirectionSerializer()
-
     class Meta:
         model = Transaction
         fields = '__all__'
@@ -147,13 +114,6 @@ class TransactionSerializer(ModelSerializer):
 
 
 class LoanSerializer(ModelSerializer):
-    from_account = AccountSerializer()
-    to_account = AccountSerializer()
-    loan_type = LoanTypeSerializer()
-    status = StatusSerializer()
-    loan_term = LoanTermsSerializer()
-    transaction = TransactionSerializer()
-
     class Meta:
         model = Loan
         fields = '__all__'
@@ -161,11 +121,6 @@ class LoanSerializer(ModelSerializer):
 
 
 class LoanPaymentSerializer(ModelSerializer):
-    paid_by = BaseEntitySerializer()
-    transaction = TransactionSerializer()
-    status = StatusSerializer()
-    loan = LoanSerializer()
-
     class Meta:
         model = LoanPayment
         fields = '__all__'
@@ -173,12 +128,6 @@ class LoanPaymentSerializer(ModelSerializer):
 
 
 class InvestmentSerializer(ModelSerializer):
-    from_account =  AccountSerializer()
-    to_account = AccountSerializer()
-    investment_type = InvestmentTypeSerializer()
-    status = StatusSerializer()
-    transaction = TransactionSerializer()
-
     class Meta:
         model = Investment
         fields = '__all__'
@@ -186,9 +135,6 @@ class InvestmentSerializer(ModelSerializer):
 
 
 class InvestmentCreditingSerializer(ModelSerializer):
-    transaction = TransactionSerializer()
-    status = StatusSerializer()
-    investment = InvestmentSerializer()
     class Meta:
         model = InvestmentCrediting
         fields = '__all__'
@@ -196,9 +142,6 @@ class InvestmentCreditingSerializer(ModelSerializer):
 
 
 class AssetSerializer(ModelSerializer):
-    branch = BranchSerializer()
-    asset_type = AssetTypeSerializer()
-    status = StatusSerializer()
     class Meta:
         model = Asset
         fields = '__all__'
@@ -206,9 +149,6 @@ class AssetSerializer(ModelSerializer):
 
 
 class CapitalSerializer(ModelSerializer):
-    branch = BranchSerializer()
-    capital_type = CapitalTypeSerializer()
-    status = StatusSerializer()
     class Meta:
         model = Capital
         fields = '__all__'
@@ -216,8 +156,6 @@ class CapitalSerializer(ModelSerializer):
 
 
 class LiabilitySerializer(ModelSerializer):
-    branch = BranchSerializer()
-    liability_type = LiabilityTypeSerializer()
     class Meta:
         model = Liability
         fields = '__all__'
@@ -225,8 +163,6 @@ class LiabilitySerializer(ModelSerializer):
 
 
 class IncomeSerializer(ModelSerializer):
-    income_type = IncomeTypeSerializer()
-
     class Meta:
         model = Income
         fields = '__all__'
@@ -234,8 +170,6 @@ class IncomeSerializer(ModelSerializer):
 
 
 class ExpenseTypeSerializer(ModelSerializer):
-    updated_by = BaseEntitySerializer()
-
     class Meta:
         model = ExpenseType
         fields = '__all__'
@@ -243,8 +177,6 @@ class ExpenseTypeSerializer(ModelSerializer):
 
 
 class ExpenseSerializer(ModelSerializer):
-    expense_type = ExpenseTypeSerializer()
-
     class Meta:
         model = Expense
         fields = '__all__'
