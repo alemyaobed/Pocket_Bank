@@ -854,36 +854,563 @@ class InterestRateTypeViewSet(ModelViewSet):
     serializer_class = InterestRateTypeSerializer
 
 class InvestmentViewSet(ModelViewSet):
-    queryset = Investment.objects.all()
+    """
+    A viewset for viewing and editing Investment instances.
+
+    list:
+    Return a list of all Investment instances with detailed information about the related 'from_account', 'to_account', and 'investment_type' fields.
+
+    retrieve:
+    Return a specific Investment instance by its ID with detailed information about the related 'from_account', 'to_account', and 'investment_type' fields.
+    """
+    queryset = Investment.objects.select_related(
+        'from_account', 'to_account', 'investment_type', 'status', 'transaction'
+    ).all()
     serializer_class = InvestmentSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific Investment instance and include full details of the related 'from_account', 'to_account', 'investment_type', 'status', and 'transaction' fields.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including the related fields.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        # Serialize related fields with full details
+        data['from_account'] = self.get_account_details(instance.from_account)
+        data['to_account'] = self.get_account_details(instance.to_account)
+        data['investment_type'] = InvestmentTypeSerializer(instance.investment_type).data
+        data['status'] = StatusSerializer(instance.status).data
+        data['transaction'] = TransactionSerializer(instance.transaction).data if instance.transaction else None
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all Investment instances and include full details of the related 'from_account', 'to_account', 'investment_type', 'status', and 'transaction' fields for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including the related fields for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        # Add full details of related fields for each item
+        for item, instance in zip(data, queryset):
+            item['from_account'] = self.get_account_details(instance.from_account)
+            item['to_account'] = self.get_account_details(instance.to_account)
+            item['investment_type'] = InvestmentTypeSerializer(instance.investment_type).data
+            item['status'] = StatusSerializer(instance.status).data
+            item['transaction'] = TransactionSerializer(instance.transaction).data if instance.transaction else None
+        return Response(data)
+
+    def get_account_details(self, account):
+        """
+        Retrieve detailed information of an Account, including its related fields.
+
+        Args:
+            account: The Account instance to be detailed.
+
+        Returns:
+            dict: The serialized data of the Account including related fields.
+        """
+        if account:
+            serializer = AccountSerializer(account)
+            data = serializer.data
+            # Assume that Account has related fields 'owner', 'account_type', 'branch', and 'status'
+            data['owner'] = BaseEntitySerializer(account.owner).data if account.owner else None
+            data['account_type'] = AccountTypeSerializer(account.account_type).data if account.account_type else None
+            data['branch'] = BranchSerializer(account.branch).data if account.branch else None
+            data['status'] = StatusSerializer(account.status).data if account.status else None
+            return data
+        return None
+
 
 class InvestmentCreditingViewSet(ModelViewSet):
-    queryset = InvestmentCrediting.objects.all()
+    """
+    A viewset for viewing and editing InvestmentCrediting instances.
+
+    list:
+    Return a list of all InvestmentCrediting instances with detailed information about the related 'transaction', 'status', and 'investment' fields.
+
+    retrieve:
+    Return a specific InvestmentCrediting instance by its ID with detailed information about the related 'transaction', 'status', and 'investment' fields.
+    """
+    queryset = InvestmentCrediting.objects.select_related(
+        'transaction', 'status', 'investment'
+    ).all()
     serializer_class = InvestmentCreditingSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific InvestmentCrediting instance and include full details of the related 'transaction', 'status', and 'investment' fields.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including the related fields.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        # Serialize related fields with full details
+        data['transaction'] = TransactionSerializer(instance.transaction).data
+        data['status'] = StatusSerializer(instance.status).data
+        data['investment'] = self.get_investment_details(instance.investment)
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all InvestmentCrediting instances and include full details of the related 'transaction', 'status', and 'investment' fields for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including the related fields for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        # Add full details of related fields for each item
+        for item, instance in zip(data, queryset):
+            item['transaction'] = TransactionSerializer(instance.transaction).data
+            item['status'] = StatusSerializer(instance.status).data
+            item['investment'] = self.get_investment_details(instance.investment)
+        return Response(data)
+
+    def get_investment_details(self, investment):
+        """
+        Retrieve detailed information of an Investment, including its related fields.
+
+        Args:
+            investment: The Investment instance to be detailed.
+
+        Returns:
+            dict: The serialized data of the Investment including related fields.
+        """
+        if investment:
+            serializer = InvestmentSerializer(investment)
+            data = serializer.data
+            # Assume that Investment has related fields 'from_account', 'to_account', 'investment_type', and 'status'
+            data['from_account'] = AccountSerializer(investment.from_account).data if investment.from_account else None
+            data['to_account'] = AccountSerializer(investment.to_account).data if investment.to_account else None
+            data['investment_type'] = InvestmentTypeSerializer(investment.investment_type).data if investment.investment_type else None
+            data['status'] = StatusSerializer(investment.status).data if investment.status else None
+            return data
+        return None
+
 
 class InvestmentTypeViewSet(ModelViewSet):
-    queryset = InvestmentType.objects.all()
+    """
+    A viewset for viewing and editing InvestmentType instances.
+
+    list:
+    Return a list of all InvestmentType instances with detailed information including the related 'updated_by' field.
+
+    retrieve:
+    Return a specific InvestmentType instance by its ID with detailed information including the related 'updated_by' field.
+    """
+    queryset = InvestmentType.objects.select_related('updated_by').all()
     serializer_class = InvestmentTypeSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific InvestmentType instance and include full details of the related 'updated_by' field.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including the 'updated_by' field.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        # Serialize the 'updated_by' field if it exists
+        if instance.updated_by:
+            data['updated_by'] = self.get_base_entity_details(instance.updated_by)
+        else:
+            data['updated_by'] = None
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all InvestmentType instances and include full details of the related 'updated_by' field for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including the 'updated_by' field for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        # Add full details of 'updated_by' field for each item
+        for item, instance in zip(data, queryset):
+            if instance.updated_by:
+                item['updated_by'] = self.get_base_entity_details(instance.updated_by)
+            else:
+                item['updated_by'] = None
+        return Response(data)
+
+    def get_base_entity_details(self, base_entity):
+        """
+        Retrieve detailed information of a BaseEntity, including its related fields.
+
+        Args:
+            base_entity: The BaseEntity instance to be detailed.
+
+        Returns:
+            dict: The serialized data of the BaseEntity including related fields.
+        """
+        if base_entity:
+            serializer = BaseEntitySerializer(base_entity)
+            data = serializer.data
+            # Assume that BaseEntity has 'branch' and 'entity_type' related fields
+            data['branch'] = BranchSerializer(base_entity.branch).data if base_entity.branch else None
+            data['entity_type'] = EntityTypeSerializer(base_entity.entity_type).data if base_entity.entity_type else None
+            return data
+        return None
+
 
 class LiabilityViewSet(ModelViewSet):
-    queryset = Liability.objects.all()
+    """
+    A viewset for viewing and editing Liability instances.
+
+    list:
+    Return a list of all Liability instances with detailed information including related fields.
+
+    retrieve:
+    Return a specific Liability instance by its ID with detailed information including related fields.
+    """
+    queryset = Liability.objects.select_related('branch', 'liability_type', 'status').all()
     serializer_class = LiabilitySerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific Liability instance and include full details of the related fields.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including related fields.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        # Serialize related fields
+        data['branch'] = BranchSerializer(instance.branch).data
+        data['liability_type'] = LiabilityTypeSerializer(instance.liability_type).data
+        data['status'] = StatusSerializer(instance.status).data
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all Liability instances and include full details of the related fields for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including related fields for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        # Add full details of related fields for each item
+        for item, instance in zip(data, queryset):
+            item['branch'] = BranchSerializer(instance.branch).data
+            item['liability_type'] = LiabilityTypeSerializer(instance.liability_type).data
+            item['status'] = StatusSerializer(instance.status).data
+        return Response(data)
+
 
 class LiabilityTypeViewSet(ModelViewSet):
-    queryset = LiabilityType.objects.all()
+    """
+    A viewset for viewing and editing LiabilityType instances.
+
+    list:
+    Return a list of all LiabilityType instances with detailed information including the related 'updated_by' field.
+
+    retrieve:
+    Return a specific LiabilityType instance by its ID with detailed information including the related 'updated_by' field.
+    """
+    queryset = LiabilityType.objects.select_related('updated_by').all()
     serializer_class = LiabilityTypeSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific LiabilityType instance and include full details of the related 'updated_by' field.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including the 'updated_by' field.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        # Serialize the 'updated_by' field if it exists
+        if instance.updated_by:
+            data['updated_by'] = self.get_base_entity_details(instance.updated_by)
+        else:
+            data['updated_by'] = None
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all LiabilityType instances and include full details of the related 'updated_by' field for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including the 'updated_by' field for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        # Add full details of 'updated_by' field for each item
+        for item, instance in zip(data, queryset):
+            if instance.updated_by:
+                item['updated_by'] = self.get_base_entity_details(instance.updated_by)
+            else:
+                item['updated_by'] = None
+        return Response(data)
+
+    def get_base_entity_details(self, base_entity):
+        """
+        Retrieve detailed information of a BaseEntity, including its related fields.
+
+        Args:
+            base_entity: The BaseEntity instance to be detailed.
+
+        Returns:
+            dict: The serialized data of the BaseEntity including related fields.
+        """
+        if base_entity:
+            serializer = BaseEntitySerializer(base_entity)
+            data = serializer.data
+            data['branch'] = BranchSerializer(base_entity.branch).data if base_entity.branch else None
+            data['entity_type'] = EntityTypeSerializer(base_entity.entity_type).data if base_entity.entity_type else None
+            return data
+        return None
+
 
 class LoanViewSet(ModelViewSet):
-    queryset = Loan.objects.all()
+    """
+    A viewset for viewing and editing Loan instances.
+
+    list:
+    Return a list of all Loan instances with detailed information including related fields.
+
+    retrieve:
+    Return a specific Loan instance by its ID with detailed information including related fields.
+    """
+    queryset = Loan.objects.select_related('from_account', 'to_account', 'loan_type', 'status', 'loan_term', 'transaction').all()
     serializer_class = LoanSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific Loan instance and include full details of the related fields.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including related fields.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        # Serialize related fields
+        data['from_account'] = AccountSerializer(instance.from_account).data
+        data['to_account'] = AccountSerializer(instance.to_account).data
+        data['loan_type'] = LoanTypeSerializer(instance.loan_type).data
+        data['status'] = StatusSerializer(instance.status).data
+        data['loan_term'] = LoanTermsSerializer(instance.loan_term).data
+        data['transaction'] = TransactionSerializer(instance.transaction).data if instance.transaction else None
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all Loan instances and include full details of the related fields for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including related fields for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        # Add full details of related fields for each item
+        for item, instance in zip(data, queryset):
+            item['from_account'] = AccountSerializer(instance.from_account).data
+            item['to_account'] = AccountSerializer(instance.to_account).data
+            item['loan_type'] = LoanTypeSerializer(instance.loan_type).data
+            item['status'] = StatusSerializer(instance.status).data
+            item['loan_term'] = LoanTermsSerializer(instance.loan_term).data
+            item['transaction'] = TransactionSerializer(instance.transaction).data if instance.transaction else None
+        return Response(data)
+
 
 class LoanPaymentViewSet(ModelViewSet):
-    queryset = LoanPayment.objects.all()
+    """
+    A viewset for viewing and editing LoanPayment instances.
+
+    list:
+    Return a list of all LoanPayment instances with detailed information including related fields.
+
+    retrieve:
+    Return a specific LoanPayment instance by its ID with detailed information including related fields.
+    """
+    queryset = LoanPayment.objects.select_related('paid_by', 'transaction', 'status', 'loan').all()
     serializer_class = LoanPaymentSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific LoanPayment instance and include full details of the related fields.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including related fields.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        data['paid_by'] = BaseEntitySerializer(instance.paid_by).data
+        data['transaction'] = TransactionSerializer(instance.transaction).data
+        data['status'] = StatusSerializer(instance.status).data
+        data['loan'] = LoanSerializer(instance.loan).data
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all LoanPayment instances and include full details of the related fields for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including related fields for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        for item, instance in zip(data, queryset):
+            item['paid_by'] = BaseEntitySerializer(instance.paid_by).data
+            item['transaction'] = TransactionSerializer(instance.transaction).data
+            item['status'] = StatusSerializer(instance.status).data
+            item['loan'] = LoanSerializer(instance.loan).data
+        return Response(data)
+
 
 class LoanTermsViewSet(ModelViewSet):
-    queryset = LoanTerms.objects.all()
+    """
+    A viewset for viewing and editing LoanTerms instances.
+
+    list:
+    Return a list of all LoanTerms instances with detailed information including related fields.
+
+    retrieve:
+    Return a specific LoanTerms instance by its ID with detailed information including related fields.
+    """
+    queryset = LoanTerms.objects.select_related('entity', 'loan_type', 'interest_rate_type').all()
     serializer_class = LoanTermsSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific LoanTerms instance and include full details of the related fields.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including related fields.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        data['entity'] = BaseEntitySerializer(instance.entity).data
+        data['loan_type'] = LoanTypeSerializer(instance.loan_type).data
+        data['interest_rate_type'] = InterestRateTypeSerializer(instance.interest_rate_type).data
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all LoanTerms instances and include full details of the related fields for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including related fields for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        for item, instance in zip(data, queryset):
+            item['entity'] = BaseEntitySerializer(instance.entity).data
+            item['loan_type'] = LoanTypeSerializer(instance.loan_type).data
+            item['interest_rate_type'] = InterestRateTypeSerializer(instance.interest_rate_type).data
+        return Response(data)
+
 
 class LoanTypeViewSet(ModelViewSet):
     queryset = LoanType.objects.all()
@@ -894,8 +1421,68 @@ class StatusViewSet(ModelViewSet):
     serializer_class = StatusSerializer
 
 class TransactionViewSet(ModelViewSet):
-    queryset = Transaction.objects.all()
+    """
+    A viewset for viewing and editing Transaction instances.
+
+    list:
+    Return a list of all Transaction instances with detailed information including related fields.
+
+    retrieve:
+    Return a specific Transaction instance by its ID with detailed information including related fields.
+    """
+    queryset = Transaction.objects.select_related('sender_account', 'receiver_account', 'transaction_type', 'initiated_by', 'status', 'branch', 'transaction_direction').all()
     serializer_class = TransactionSerializer
+    # permission_classes = [IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve a specific Transaction instance and include full details of the related fields.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data including related fields.
+        """
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        data['sender_account'] = AccountSerializer(instance.sender_account).data
+        data['receiver_account'] = AccountSerializer(instance.receiver_account).data
+        data['transaction_type'] = TransactionTypeSerializer(instance.transaction_type).data
+        data['initiated_by'] = BaseEntitySerializer(instance.initiated_by).data
+        data['status'] = StatusSerializer(instance.status).data
+        data['branch'] = BranchSerializer(instance.branch).data
+        data['transaction_direction'] = TransactionDirectionSerializer(instance.transaction_direction).data
+        return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        """
+        List all Transaction instances and include full details of the related fields for each item.
+
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A list of serialized data including related fields for each item.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        for item, instance in zip(data, queryset):
+            item['sender_account'] = AccountSerializer(instance.sender_account).data
+            item['receiver_account'] = AccountSerializer(instance.receiver_account).data
+            item['transaction_type'] = TransactionTypeSerializer(instance.transaction_type).data
+            item['initiated_by'] = BaseEntitySerializer(instance.initiated_by).data
+            item['status'] = StatusSerializer(instance.status).data
+            item['branch'] = BranchSerializer(instance.branch).data
+            item['transaction_direction'] = TransactionDirectionSerializer(instance.transaction_direction).data
+        return Response(data)
+
 
 class TransactionDirectionViewSet(ModelViewSet):
     queryset = TransactionDirection.objects.all()
