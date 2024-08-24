@@ -20,8 +20,8 @@ router.register(r'documents', DocumentViewSet)
 router.register(r'notifications', NotificationViewSet)
 
 urlpatterns = [
-    path('auth/login/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('auth/login/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     # path('test-auth/', test_authentication, name='test_auth'),
     path('', include(router.urls)),
 ]
