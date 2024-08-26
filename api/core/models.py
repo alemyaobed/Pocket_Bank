@@ -2,6 +2,8 @@ import random
 from django.db import models
 from uuid import uuid4
 
+from django.core.exceptions import ValidationError
+
 
 class Account(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
@@ -13,7 +15,7 @@ class Account(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     closed_at = models.DateTimeField(blank=True, null=True)
-    current_balance = models.FloatField()
+    current_balance = models.FloatField(default=80)
     branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
     status = models.ForeignKey('Status', on_delete=models.CASCADE)
 
@@ -38,19 +40,42 @@ class Status(models.Model):
 
 class Transaction(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    sender_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='sent_transactions')
-    receiver_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='received_transactions')
+    sender_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='sent_transactions', null=True)
+    recipient_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='received_transactions', null=True)
     transaction_type = models.ForeignKey('TransactionType', on_delete=models.CASCADE)
     initiated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
     description = models.TextField(blank=True, null=True)
-    receiver_balance = models.FloatField()
-    sender_balance = models.FloatField()
+    recipient_account_balance = models.FloatField()
+    sender_account_balance = models.FloatField()
     transaction_amount = models.FloatField()
     status = models.ForeignKey('Status', on_delete=models.CASCADE)
     external_reference = models.CharField(max_length=100, blank=True, null=True)
     branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
     transaction_direction = models.ForeignKey('TransactionDirection', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        if self.transaction_direction.direction == 'Internal':
+            if not self.sender_account or not self.recipient_account:
+                raise ValidationError("Both sender and receiver accounts must be set for internal transactions.")
+            if self.sender_account.current_balance - self.transaction_amount < 80:
+                raise ValidationError("Insufficient funds in sender account.")
+            if self.sender_account == self.recipient_account:
+                raise ValidationError("Sender and receiver accounts cannot be the same.")
+
+        elif self.transaction_direction.direction == 'External':
+            if self.sender_account and self.recipient_account:
+                raise ValidationError("Only one of sender or receiver account should be set for external transactions.")
+            if not self.external_reference:
+                raise ValidationError("External reference must be provided for external transactions.")
+            if self.sender_account:
+                if self.sender_account.current_balance - self.transaction_amount < 80:
+                    raise ValidationError("Insufficient funds in account.")
+            if self.receiver_account:
+                if self.recipient_account.current_balance - self.transaction_amount < 80:
+                    raise ValidationError("Insufficient funds in account.")
+        else:
+            raise ValidationError("Invalid transaction direction.")
 
     def __str__(self):
         return f'Transaction {self.id}'
@@ -234,7 +259,7 @@ class AnnualBalance(models.Model):
 
 
 class TransactionDirection(models.Model):
-    direction_name = models.CharField(max_length=40)
+    direction = models.CharField(max_length=10, choices=[('Internal', 'Internal'), ('External', 'External')])
 
     def __str__(self):
         return self.direction_name

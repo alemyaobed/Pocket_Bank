@@ -14,7 +14,7 @@ class Command(BaseCommand):
         # Definition of meaningful choices for each model
         loan_types = ['Personal Loan', 'Home Loan', 'Car Loan', 'Education Loan', 'Business Loan']
         interest_rate_types = ['Fixed', 'Variable', 'Hybrid', 'Promotional', 'Introductory']
-        transaction_directions = ['Credit', 'Debit', 'Transfer', 'Withdrawal', 'Deposit']
+        transaction_directions = ['Internal', 'External']
         account_types = ['Savings', 'Current','Checking', 'Business', 'Investment', 'Retirement']
         investment_types = ['Stocks', 'Bonds', 'Real Estate', 'Mutual Funds', 'Commodities']
         asset_types = ['Real Estate', 'Vehicles', 'Equipment', 'Intellectual Property', 'Cash']

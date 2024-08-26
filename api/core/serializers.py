@@ -110,7 +110,7 @@ class TransactionSerializer(ModelSerializer):
     class Meta:
         model = Transaction
         fields = '__all__'
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'created_at', 'recipient_account_balance', 'sender_account_balance', 'status']
 
 
 class LoanSerializer(ModelSerializer):

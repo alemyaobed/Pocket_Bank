@@ -1,8 +1,12 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from .permissions import IsStaffOrRelated
 
 from accounts.serializers import BaseEntitySerializer, BranchSerializer, EntityTypeSerializer
+from accounts.models import BaseEntity, Branch
+
 from .models import (
     Account, AccountType, AnnualBalance, Asset, AssetType, Audit,
     Capital, CapitalType, Expense, ExpenseType, Income, IncomeType,
@@ -21,7 +25,30 @@ from .serializers import (
     TransactionDirectionSerializer, TransactionTypeSerializer
 )
 
-class AccountViewSet(ModelViewSet):
+
+class BaseViewSet(ModelViewSet):
+    """
+    Base ViewSet that provides a standardized delete response.
+    """
+    def destroy(self, request, *args, **kwargs):
+        """
+        Handle deletion of an object and return a standardized response.
+        """
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response(
+            {'message': f'{self.serializer_class.Meta.model.__name__} deleted successfully'},
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+    def perform_destroy(self, instance):
+        """
+        Perform the actual deletion of the instance.
+        """
+        instance.delete()
+
+
+class AccountViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Account instances.
 
@@ -35,7 +62,7 @@ class AccountViewSet(ModelViewSet):
         'owner', 'account_type', 'branch', 'status'
     ).all()
     serializer_class = AccountSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStaffOrRelated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -101,7 +128,7 @@ class AccountViewSet(ModelViewSet):
             return data
         return None
 
-class AccountTypeViewSet(ModelViewSet):
+class AccountTypeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing AccountType instances.
 
@@ -113,7 +140,7 @@ class AccountTypeViewSet(ModelViewSet):
     """
     queryset = AccountType.objects.select_related('updated_by').all()
     serializer_class = AccountTypeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -179,7 +206,7 @@ class AccountTypeViewSet(ModelViewSet):
             return data
         return None
 
-class AnnualBalanceViewSet(ModelViewSet):
+class AnnualBalanceViewSet(BaseViewSet):
     """
     A viewset for viewing and editing `AnnualBalance` instances.
 
@@ -191,7 +218,7 @@ class AnnualBalanceViewSet(ModelViewSet):
     """
     queryset = AnnualBalance.objects.select_related('branch').all()
     serializer_class = AnnualBalanceSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -253,7 +280,7 @@ class AnnualBalanceViewSet(ModelViewSet):
             return serializer.data
         return None
 
-class AssetViewSet(ModelViewSet):
+class AssetViewSet(BaseViewSet):
     """
     A viewset for viewing and editing `Asset` instances.
 
@@ -265,7 +292,7 @@ class AssetViewSet(ModelViewSet):
     """
     queryset = Asset.objects.select_related('branch', 'asset_type', 'status').all()
     serializer_class = AssetSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -356,7 +383,7 @@ class AssetViewSet(ModelViewSet):
         return None
 
 
-class AssetTypeViewSet(ModelViewSet):
+class AssetTypeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing AssetType instances.
 
@@ -368,7 +395,7 @@ class AssetTypeViewSet(ModelViewSet):
     """
     queryset = AssetType.objects.select_related('updated_by').all()
     serializer_class = AssetTypeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -435,11 +462,12 @@ class AssetTypeViewSet(ModelViewSet):
         return None
 
 
-class AuditViewSet(ModelViewSet):
+class AuditViewSet(BaseViewSet):
     queryset = Audit.objects.all()
     serializer_class = AuditSerializer
+    pagination_class = [IsAuthenticated, IsAdminUser]
 
-class CapitalViewSet(ModelViewSet):
+class CapitalViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Capital instances.
 
@@ -451,7 +479,7 @@ class CapitalViewSet(ModelViewSet):
     """
     queryset = Capital.objects.select_related('branch', 'capital_type', 'status').all()
     serializer_class = CapitalSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -497,7 +525,7 @@ class CapitalViewSet(ModelViewSet):
         return Response(data)
 
 
-class CapitalTypeViewSet(ModelViewSet):
+class CapitalTypeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing CapitalType instances.
 
@@ -509,7 +537,7 @@ class CapitalTypeViewSet(ModelViewSet):
     """
     queryset = CapitalType.objects.select_related('updated_by').all()
     serializer_class = CapitalTypeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -576,7 +604,7 @@ class CapitalTypeViewSet(ModelViewSet):
         return None
 
 
-class ExpenseViewSet(ModelViewSet):
+class ExpenseViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Expense instances.
 
@@ -588,7 +616,7 @@ class ExpenseViewSet(ModelViewSet):
     """
     queryset = Expense.objects.select_related('expense_type').all()
     serializer_class = ExpenseSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -649,7 +677,7 @@ class ExpenseViewSet(ModelViewSet):
         return serializer.data
 
 
-class ExpenseTypeViewSet(ModelViewSet):
+class ExpenseTypeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing ExpenseType instances.
 
@@ -661,7 +689,7 @@ class ExpenseTypeViewSet(ModelViewSet):
     """
     queryset = ExpenseType.objects.select_related('updated_by').all()
     serializer_class = ExpenseTypeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -728,7 +756,7 @@ class ExpenseTypeViewSet(ModelViewSet):
         return None
 
 
-class IncomeViewSet(ModelViewSet):
+class IncomeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Income instances.
 
@@ -740,7 +768,7 @@ class IncomeViewSet(ModelViewSet):
     """
     queryset = Income.objects.select_related('income_type').all()
     serializer_class = IncomeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -789,7 +817,7 @@ class IncomeViewSet(ModelViewSet):
         return Response(data)
 
 
-class IncomeTypeViewSet(ModelViewSet):
+class IncomeTypeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing IncomeType instances.
 
@@ -801,7 +829,7 @@ class IncomeTypeViewSet(ModelViewSet):
     """
     queryset = IncomeType.objects.select_related('updated_by').all()
     serializer_class = IncomeTypeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -849,11 +877,12 @@ class IncomeTypeViewSet(ModelViewSet):
                 item['updated_by'] = None
         return Response(data)
 
-class InterestRateTypeViewSet(ModelViewSet):
+class InterestRateTypeViewSet(BaseViewSet):
     queryset = InterestRateType.objects.all()
     serializer_class = InterestRateTypeSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
-class InvestmentViewSet(ModelViewSet):
+class InvestmentViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Investment instances.
 
@@ -867,7 +896,7 @@ class InvestmentViewSet(ModelViewSet):
         'from_account', 'to_account', 'investment_type', 'status', 'transaction'
     ).all()
     serializer_class = InvestmentSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStaffOrRelated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -938,7 +967,7 @@ class InvestmentViewSet(ModelViewSet):
         return None
 
 
-class InvestmentCreditingViewSet(ModelViewSet):
+class InvestmentCreditingViewSet(BaseViewSet):
     """
     A viewset for viewing and editing InvestmentCrediting instances.
 
@@ -952,7 +981,7 @@ class InvestmentCreditingViewSet(ModelViewSet):
         'transaction', 'status', 'investment'
     ).all()
     serializer_class = InvestmentCreditingSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStaffOrRelated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1019,7 +1048,7 @@ class InvestmentCreditingViewSet(ModelViewSet):
         return None
 
 
-class InvestmentTypeViewSet(ModelViewSet):
+class InvestmentTypeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing InvestmentType instances.
 
@@ -1031,7 +1060,7 @@ class InvestmentTypeViewSet(ModelViewSet):
     """
     queryset = InvestmentType.objects.select_related('updated_by').all()
     serializer_class = InvestmentTypeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1098,7 +1127,7 @@ class InvestmentTypeViewSet(ModelViewSet):
         return None
 
 
-class LiabilityViewSet(ModelViewSet):
+class LiabilityViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Liability instances.
 
@@ -1110,7 +1139,7 @@ class LiabilityViewSet(ModelViewSet):
     """
     queryset = Liability.objects.select_related('branch', 'liability_type', 'status').all()
     serializer_class = LiabilitySerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1156,7 +1185,7 @@ class LiabilityViewSet(ModelViewSet):
         return Response(data)
 
 
-class LiabilityTypeViewSet(ModelViewSet):
+class LiabilityTypeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing LiabilityType instances.
 
@@ -1168,7 +1197,7 @@ class LiabilityTypeViewSet(ModelViewSet):
     """
     queryset = LiabilityType.objects.select_related('updated_by').all()
     serializer_class = LiabilityTypeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1234,7 +1263,7 @@ class LiabilityTypeViewSet(ModelViewSet):
         return None
 
 
-class LoanViewSet(ModelViewSet):
+class LoanViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Loan instances.
 
@@ -1246,7 +1275,7 @@ class LoanViewSet(ModelViewSet):
     """
     queryset = Loan.objects.select_related('from_account', 'to_account', 'loan_type', 'status', 'loan_term', 'transaction').all()
     serializer_class = LoanSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStaffOrRelated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1298,7 +1327,7 @@ class LoanViewSet(ModelViewSet):
         return Response(data)
 
 
-class LoanPaymentViewSet(ModelViewSet):
+class LoanPaymentViewSet(BaseViewSet):
     """
     A viewset for viewing and editing LoanPayment instances.
 
@@ -1310,7 +1339,7 @@ class LoanPaymentViewSet(ModelViewSet):
     """
     queryset = LoanPayment.objects.select_related('paid_by', 'transaction', 'status', 'loan').all()
     serializer_class = LoanPaymentSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStaffOrRelated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1356,7 +1385,7 @@ class LoanPaymentViewSet(ModelViewSet):
         return Response(data)
 
 
-class LoanTermsViewSet(ModelViewSet):
+class LoanTermsViewSet(BaseViewSet):
     """
     A viewset for viewing and editing LoanTerms instances.
 
@@ -1368,7 +1397,7 @@ class LoanTermsViewSet(ModelViewSet):
     """
     queryset = LoanTerms.objects.select_related('entity', 'loan_type', 'interest_rate_type').all()
     serializer_class = LoanTermsSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1412,15 +1441,17 @@ class LoanTermsViewSet(ModelViewSet):
         return Response(data)
 
 
-class LoanTypeViewSet(ModelViewSet):
+class LoanTypeViewSet(BaseViewSet):
     queryset = LoanType.objects.all()
     serializer_class = LoanTypeSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
-class StatusViewSet(ModelViewSet):
+class StatusViewSet(BaseViewSet):
     queryset = Status.objects.all()
     serializer_class = StatusSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
-class TransactionViewSet(ModelViewSet):
+class TransactionViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Transaction instances.
 
@@ -1430,9 +1461,20 @@ class TransactionViewSet(ModelViewSet):
     retrieve:
     Return a specific Transaction instance by its ID with detailed information including related fields.
     """
-    queryset = Transaction.objects.select_related('sender_account', 'receiver_account', 'transaction_type', 'initiated_by', 'status', 'branch', 'transaction_direction').all()
+    queryset = Transaction.objects.select_related('sender_account', 'recipient_account', 'transaction_type', 'initiated_by', 'status', 'branch', 'transaction_direction').all()
     serializer_class = TransactionSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsStaffOrRelated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return self.queryset
+        else:
+            return self.queryset.filter(
+                sender_account__owner=user
+            ) | self.queryset.filter(
+                recipient_account__owner=user
+            )
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1483,11 +1525,115 @@ class TransactionViewSet(ModelViewSet):
             item['transaction_direction'] = TransactionDirectionSerializer(instance.transaction_direction).data
         return Response(data)
 
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new Transaction instance and update the sender and receiver account balances.
 
-class TransactionDirectionViewSet(ModelViewSet):
+        Args:
+            request: The HTTP request.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: The serialized data of the new Transaction instance.
+        """
+        data = request.data
+        sender_account = Account.objects.get(account_number=data['sender_account'])
+        recipient_account = Account.objects.get(account_number=data['receiver_account'])
+        amount = data['amount']
+        transaction_direction = TransactionDirection.objects.get(id=data['transaction_direction'])
+        user = request.user
+        transaction_type = TransactionType.objects.get(id=data['transaction_type'])
+        initiated_by = BaseEntity.objects.get(id=data['initiated_by'])
+        branch = Branch.objects.get(id=data['branch'])
+        transaction_status = Status.objects.get(status_name='Completed')
+
+        # Check if the transaction direction is internal or external
+        if transaction_direction.direction == 'Internal':
+            # Check if both sender and receiver accounts are set
+            if not sender_account or not recipient_account:
+                return Response(
+                    {"error": "Both sender and receiver accounts must be set for internal transactions."},
+                    status=status.HTTP_400_BAD_REQUEST)
+            # Check if the sender account has enough balance to make the transaction
+            if sender_account.current_balance - amount < 80:
+                return Response(
+                    {"error": "Insufficient funds in sender account."},
+                    status=status.HTTP_400_BAD_REQUEST)
+            # Check if the sender and receiver accounts are the same
+            if sender_account == recipient_account:
+                return Response (
+                    {"error": "Sender and receiver accounts cannot be the same."},
+                    status=status.HTTP_400_BAD_REQUEST)
+
+            if user.entity_type.name == 'Individual':
+                if sender_account.owner != user:
+                    return Response(
+                        {"error": "You are not authorized to make transactions from this account."},
+                        status=status.HTTP_403_FORBIDDEN)
+                initiated_by = BaseEntity.objects.get(id=user.id)
+        elif transaction_direction.direction == 'External':
+            # Check if only one of sender or receiver account is set
+            if sender_account and recipient_account:
+                return Response(
+                    {"error": "Only one of sender or receiver account should be set for external transactions."},
+                    status=status.HTTP_400_BAD_REQUEST)
+            # Check if the sender or receiver account has enough balance to make the transaction
+            if sender_account:
+                if sender_account.current_balance - amount < 80:
+                    return Response(
+                        {"error": "Insufficient funds in sender account."},
+                        status=status.HTTP_400_BAD_REQUEST)
+                if user.entity_type.name == 'Individual':
+                    if sender_account.owner != transaction_type.type_name == 'Withdrawal':
+                        return Response(
+                            {"error": "You are not authorized to make transactions from this account."},
+                            status=status.HTTP_403_FORBIDDEN)
+                    initiated_by = BaseEntity.objects.get(id=user.id)
+            if recipient_account:
+                if recipient_account.current_balance - amount < 80:
+                    return Response(
+                        {"error": "Insufficient funds in receiver account."},
+                        status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(
+                {"error": "Invalid transaction direction."},
+                status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                # Update the sender and receiver account balances
+                sender_account.current_balance -= amount
+                recipient_account.current_balance += amount
+                sender_account.save()
+                recipient_account.save()
+                # Create a new Transaction instance
+                transaction = Transaction.objects.create(
+                    sender_account=sender_account,
+                    receiver_account=recipient_account,
+                    transaction_amount=amount,
+                    transaction_type=transaction_type,
+                    initiated_by=initiated_by,
+                    status=transaction_status,
+                    branch=branch,
+                    transaction_direction_id=data['transaction_direction']
+                )
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.get_serializer(transaction)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class TransactionDirectionViewSet(BaseViewSet):
     queryset = TransactionDirection.objects.all()
     serializer_class = TransactionDirectionSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
-class TransactionTypeViewSet(ModelViewSet):
+class TransactionTypeViewSet(BaseViewSet):
     queryset = TransactionType.objects.all()
     serializer_class = TransactionTypeSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
