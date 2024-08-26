@@ -18,6 +18,7 @@ class Account(models.Model):
     current_balance = models.FloatField(default=80)
     branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
     status = models.ForeignKey('Status', on_delete=models.CASCADE)
+    created_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE, related_name='created_accounts')
 
     def save(self, *args, **kwargs):
         if not self.account_number:
@@ -185,7 +186,7 @@ class InvestmentCrediting(models.Model):
 
 
 class Audit(models.Model):
-    entity = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
+    action_initiator = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
     action = models.CharField(max_length=50)
     table_name = models.CharField(max_length=50)
     old_value = models.TextField(blank=True, null=True)

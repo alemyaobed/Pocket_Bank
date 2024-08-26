@@ -84,6 +84,7 @@ class AccountViewSet(BaseViewSet):
         data['account_type'] = AccountTypeSerializer(instance.account_type).data if instance.account_type else None
         data['branch'] = BranchSerializer(instance.branch).data if instance.branch else None
         data['status'] = StatusSerializer(instance.status).data if instance.status else None
+        data['created_by'] = BaseEntitySerializer(instance.created_by).data if instance.created_by else None
         return Response(data)
 
     def list(self, request, *args, **kwargs):
@@ -107,6 +108,7 @@ class AccountViewSet(BaseViewSet):
             item['account_type'] = AccountTypeSerializer(instance.account_type).data if instance.account_type else None
             item['branch'] = BranchSerializer(instance.branch).data if instance.branch else None
             item['status'] = StatusSerializer(instance.status).data if instance.status else None
+            item['created_by'] = BaseEntitySerializer(instance.created_by).data if instance.created_by else None
         return Response(data)
 
     def get_base_entity_details(self, base_entity):
@@ -127,6 +129,15 @@ class AccountViewSet(BaseViewSet):
             data['entity_type'] = EntityTypeSerializer(base_entity.entity_type).data if base_entity.entity_type else None
             return data
         return None
+
+    def perform_create(self, serializer):
+        """
+        Perform the creation of the instance and set the 'created_by' field to the current user.
+
+        Args:
+            serializer: The serializer instance.
+        """
+        serializer.save(created_by=self.request.user)
 
 class AccountTypeViewSet(BaseViewSet):
     """
@@ -1492,7 +1503,7 @@ class TransactionViewSet(BaseViewSet):
         serializer = self.get_serializer(instance)
         data = serializer.data
         data['sender_account'] = AccountSerializer(instance.sender_account).data
-        data['receiver_account'] = AccountSerializer(instance.receiver_account).data
+        data['recipient_account'] = AccountSerializer(instance.receiver_account).data
         data['transaction_type'] = TransactionTypeSerializer(instance.transaction_type).data
         data['initiated_by'] = BaseEntitySerializer(instance.initiated_by).data
         data['status'] = StatusSerializer(instance.status).data
@@ -1517,7 +1528,7 @@ class TransactionViewSet(BaseViewSet):
         data = serializer.data
         for item, instance in zip(data, queryset):
             item['sender_account'] = AccountSerializer(instance.sender_account).data
-            item['receiver_account'] = AccountSerializer(instance.receiver_account).data
+            item['recipient_account'] = AccountSerializer(instance.receiver_account).data
             item['transaction_type'] = TransactionTypeSerializer(instance.transaction_type).data
             item['initiated_by'] = BaseEntitySerializer(instance.initiated_by).data
             item['status'] = StatusSerializer(instance.status).data
@@ -1527,7 +1538,7 @@ class TransactionViewSet(BaseViewSet):
 
     def create(self, request, *args, **kwargs):
         """
-        Create a new Transaction instance and update the sender and receiver account balances.
+        Create a new Transaction instance and update the sender and recipient account balances.
 
         Args:
             request: The HTTP request.
@@ -1539,7 +1550,7 @@ class TransactionViewSet(BaseViewSet):
         """
         data = request.data
         sender_account = Account.objects.get(account_number=data['sender_account'])
-        recipient_account = Account.objects.get(account_number=data['receiver_account'])
+        recipient_account = Account.objects.get(account_number=data['recipient_account'])
         amount = data['amount']
         transaction_direction = TransactionDirection.objects.get(id=data['transaction_direction'])
         user = request.user
