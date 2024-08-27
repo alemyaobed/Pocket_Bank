@@ -27,8 +27,9 @@ class IsStaffOrRelated(BasePermission):
         # Otherwise, allow only viewing (GET) and ensure the user is related to the transaction
         if request.method in ['GET', 'HEAD', 'OPTIONS']:
             return (
-                (hasattr(obj, 'sender_account') and obj.sender_account.owner == request.user) or
-                (hasattr(obj, 'recipient_account') and obj.recipient_account.owner == request.user)
+                ((hasattr(obj, 'sender_account') and obj.sender_account.owner == request.user)) or
+                ((hasattr(obj, 'recipient_account') and obj.recipient_account.owner == request.user)) or
+                ((hasattr(obj, 'owner') and obj.owner == request.user))
             )
         return False
 

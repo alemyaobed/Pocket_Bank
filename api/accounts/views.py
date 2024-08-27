@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from core.serializers import StatusSerializer
+from core.views import BaseViewSet
 from .models import (
     Employee, EntityType, BaseEntity, Notification, Document,
     Department, Role, Branch
@@ -12,6 +13,16 @@ from .serializers import (
     EmployeeSerializer, EntityTypeSerializer, NotificationSerializer,
     RoleSerializer, BranchSerializer,
     )
+from rest_framework.views import APIView
+from rest_framework import status
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_bytes
+from django.core.mail import send_mail
+from django.urls import reverse
+from .serializers import PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 # @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
@@ -21,7 +32,132 @@ from .serializers import (
 #     """
 #     return Response({"message": "You are authenticated!"})
 
-class EntityTypeViewSet(ModelViewSet):
+
+# class PasswordResetRequestView(APIView):
+#     permission_classes = [AllowAny]
+#     def post(self, request):
+#         email = request.data.get('email')
+#         if not email:
+#             return Response({"message": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
+#         try:
+#             user = BaseEntity.objects.get(email=email)
+#             token = default_token_generator.make_token(user)
+#             uid = urlsafe_base64_encode(force_bytes(user.pk))
+#             reset_link = request.build_absolute_uri(reverse('reset_password_confirm', args=[uid, token]))
+
+#             # Send password reset email
+#             subject = "Password Reset"
+#             message = f"Hi {user.username},\n\nPlease click the link below to reset your password:\n{reset_link}\n\nThank you!"
+#             send_mail(subject, message, 'noreply@example.com', [user.email])
+
+#             return Response({"message": "Password reset link sent."}, status=status.HTTP_200_OK)
+#         except BaseEntity.DoesNotExist:
+#             return Response({"message": "User with this email does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# class PasswordResetConfirmView(APIView):
+#     permission_classes = [AllowAny]
+#     def post(self, request, uidb64, token):
+#         try:
+#             uid = urlsafe_base64_decode(uidb64).decode()
+#             user = BaseEntity.objects.get(pk=uid)
+
+#             if user is not None and default_token_generator.check_token(user, token):
+#                 new_password = request.data.get('new_password')
+#                 if not new_password:
+#                     return Response({"message": "New password is required."}, status=status.HTTP_400_BAD_REQUEST)
+#                 user.set_password(new_password)
+#                 user.save()
+#                 return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
+#             else:
+#                 return Response({"message": "Invalid password reset link."}, status=status.HTTP_400_BAD_REQUEST)
+#         except (TypeError, ValueError, OverflowError, BaseEntity.DoesNotExist):
+#             user = None
+#             return Response({"message": "Invalid password reset link."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        request_body=PasswordResetRequestSerializer,
+        responses={
+            200: openapi.Response(description="Password reset link sent."),
+            400: openapi.Response(description="User with this email does not exist or invalid request."),
+        },
+    )
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            try:
+                user = BaseEntity.objects.get(email=email)
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                reset_link = request.build_absolute_uri(reverse('reset_password_confirm', args=[uid, token]))
+
+                # Send password reset email
+                subject = "Password Reset"
+                message = f"Hi {user.username},\n\nPlease click the link below to reset your password:\n{reset_link}\n\nThank you!"
+                send_mail(subject, message, 'noreply@example.com', [user.email])
+
+                return Response({"message": "Password reset link sent."}, status=status.HTTP_200_OK)
+            except BaseEntity.DoesNotExist:
+                return Response({"message": "User with this email does not exist."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        request_body=PasswordResetConfirmSerializer,
+        responses={
+            200: openapi.Response(description="Password reset successfully!"),
+            400: openapi.Response(description="Invalid password reset link or missing new password."),
+        },
+    )
+    def post(self, request, uidb64, token):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                uid = urlsafe_base64_decode(uidb64).decode()
+                user = BaseEntity.objects.get(pk=uid)
+
+                if user is not None and default_token_generator.check_token(user, token):
+                    new_password = serializer.validated_data['new_password']
+
+                    user.set_password(new_password)
+                    user.save()
+                    return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
+                else:
+                    return Response({"message": "Invalid password reset link."}, status=status.HTTP_400_BAD_REQUEST)
+            except (TypeError, ValueError, OverflowError, BaseEntity.DoesNotExist):
+                user = None
+                return Response({"message": "Invalid password reset link."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ActivateAccountView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request, uidb64, token):
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = BaseEntity.objects.get(pk=uid)
+
+            if user is not None and default_token_generator.check_token(user, token):
+                user.is_active = True
+                user.save()
+                return Response({"message": "Account activated successfully!"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "Invalid activation link."}, status=status.HTTP_400_BAD_REQUEST)
+        except (TypeError, ValueError, OverflowError, BaseEntity.DoesNotExist):
+            user = None
+            return Response({"message": "Invalid activation link."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EntityTypeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing EntityType instances.
 
@@ -33,7 +169,7 @@ class EntityTypeViewSet(ModelViewSet):
     """
     queryset = EntityType.objects.select_related('updated_by').all()
     serializer_class = EntityTypeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -79,7 +215,7 @@ class EntityTypeViewSet(ModelViewSet):
         return Response(data)
 
 
-class DepartmentViewSet(ModelViewSet):
+class DepartmentViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Department instances.
 
@@ -91,7 +227,7 @@ class DepartmentViewSet(ModelViewSet):
     """
     queryset = Department.objects.select_related('head_of_department', 'branch').all()
     serializer_class = DepartmentSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -140,7 +276,7 @@ class DepartmentViewSet(ModelViewSet):
         return Response(data)
 
 
-class BaseEntityViewSet(ModelViewSet):
+class BaseEntityViewSet(BaseViewSet):
     """
     A viewset for viewing and editing BaseEntity instances.
 
@@ -153,7 +289,7 @@ class BaseEntityViewSet(ModelViewSet):
 
     queryset = BaseEntity.objects.select_related('branch', 'entity_type').all()
     serializer_class = BaseEntitySerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -200,7 +336,7 @@ class BaseEntityViewSet(ModelViewSet):
 
         return Response(data)
 
-class BranchViewSet(ModelViewSet):
+class BranchViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Branch instances.
 
@@ -213,7 +349,7 @@ class BranchViewSet(ModelViewSet):
 
     queryset = Branch.objects.select_related('manager').all()
     serializer_class = BranchSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -266,7 +402,7 @@ class BranchViewSet(ModelViewSet):
 
         return Response(data)
 
-class EmployeeViewSet(ModelViewSet):
+class EmployeeViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Employee instances.
 
@@ -278,7 +414,7 @@ class EmployeeViewSet(ModelViewSet):
     """
     queryset = Employee.objects.select_related('branch', 'entity_type', 'role', 'department').all()
     serializer_class = EmployeeSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -330,7 +466,7 @@ class EmployeeViewSet(ModelViewSet):
 
         return Response(data)
 
-class RoleViewSet(ModelViewSet):
+class RoleViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Role instances.
 
@@ -342,10 +478,10 @@ class RoleViewSet(ModelViewSet):
     """
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
 
-class DocumentViewSet(ModelViewSet):
+class DocumentViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Document instances.
 
@@ -357,7 +493,7 @@ class DocumentViewSet(ModelViewSet):
     """
     queryset = Document.objects.select_related('owner').all()
     serializer_class = DocumentSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -403,7 +539,7 @@ class DocumentViewSet(ModelViewSet):
         return Response(data)
 
 
-class NotificationViewSet(ModelViewSet):
+class NotificationViewSet(BaseViewSet):
     """
     A viewset for viewing and editing Notification instances.
 
@@ -415,7 +551,7 @@ class NotificationViewSet(ModelViewSet):
     """
     queryset = Notification.objects.select_related('recipient', 'status').all()
     serializer_class = NotificationSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def retrieve(self, request, *args, **kwargs):
         """

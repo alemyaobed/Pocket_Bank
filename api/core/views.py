@@ -1,8 +1,11 @@
+from datetime import timezone
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from .permissions import IsStaffOrRelated
+from django.db import transaction as db_transaction
 
 from accounts.serializers import BaseEntitySerializer, BranchSerializer, EntityTypeSerializer
 from accounts.models import BaseEntity, Branch
@@ -63,6 +66,16 @@ class AccountViewSet(BaseViewSet):
     ).all()
     serializer_class = AccountSerializer
     permission_classes = [IsAuthenticated, IsStaffOrRelated]
+
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     if user.is_staff:
+    #         return self.queryset
+    #     elif user.is_anonymous:
+    #         return self.queryset.none()
+    #     else:
+    #         return self.queryset.filter(owner=user)
+
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -476,7 +489,7 @@ class AssetTypeViewSet(BaseViewSet):
 class AuditViewSet(BaseViewSet):
     queryset = Audit.objects.all()
     serializer_class = AuditSerializer
-    pagination_class = [IsAuthenticated, IsAdminUser]
+    permission_class= [IsAuthenticated, IsAdminUser]
 
 class CapitalViewSet(BaseViewSet):
     """
@@ -1476,16 +1489,18 @@ class TransactionViewSet(BaseViewSet):
     serializer_class = TransactionSerializer
     permission_classes = [IsAuthenticated, IsStaffOrRelated]
 
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_staff:
-            return self.queryset
-        else:
-            return self.queryset.filter(
-                sender_account__owner=user
-            ) | self.queryset.filter(
-                recipient_account__owner=user
-            )
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     if user.is_staff:
+    #         return self.queryset
+    #     elif user.is_anonymous:
+    #         return self.queryset.none()
+    #     else:
+    #         return self.queryset.filter(
+    #             sender_account__owner=user
+    #         ) | self.queryset.filter(
+    #             recipient_account__owner=user
+    #         )
 
     def retrieve(self, request, *args, **kwargs):
         """
@@ -1589,6 +1604,14 @@ class TransactionViewSet(BaseViewSet):
                 return Response(
                     {"error": "Only one of sender or receiver account should be set for external transactions."},
                     status=status.HTTP_400_BAD_REQUEST)
+            if transaction_type == 'Deposit' and not recipient_account:
+                return Response(
+                    {"error": "Recipient's Account field is empty. Make sure you are using the recipeint's field."},
+                    status=status.HTTP_400_BAD_REQUEST)
+            if transaction_type == 'Withdrawal' and not sender_account:
+                return Response({"error": "Sender's Account field is empty. Make sure you are using the sender's field."},
+                    status=status.HTTP_400_BAD_REQUEST)
+
             # Check if the sender or receiver account has enough balance to make the transaction
             if sender_account:
                 if sender_account.current_balance - amount < 80:
@@ -1612,14 +1635,14 @@ class TransactionViewSet(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            with transaction.atomic():
-                # Update the sender and receiver account balances
-                sender_account.current_balance -= amount
-                recipient_account.current_balance += amount
-                sender_account.save()
-                recipient_account.save()
+            with db_transaction.atomic():
+                # # Update the sender and receiver account balances
+                # sender_account.current_balance -= amount
+                # recipient_account.current_balance += amount
+                # sender_account.save()
+                # recipient_account.save()
                 # Create a new Transaction instance
-                transaction = Transaction.objects.create(
+                transaction_obj = Transaction.objects.create(
                     sender_account=sender_account,
                     receiver_account=recipient_account,
                     transaction_amount=amount,
@@ -1627,7 +1650,7 @@ class TransactionViewSet(BaseViewSet):
                     initiated_by=initiated_by,
                     status=transaction_status,
                     branch=branch,
-                    transaction_direction_id=data['transaction_direction']
+                    transaction_direction=transaction_direction
                 )
 
         except Exception as e:
@@ -1635,7 +1658,7 @@ class TransactionViewSet(BaseViewSet):
                 {"error": str(e)},
                 status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.get_serializer(transaction)
+        serializer = self.get_serializer(transaction_obj)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -1648,3 +1671,33 @@ class TransactionTypeViewSet(BaseViewSet):
     queryset = TransactionType.objects.all()
     serializer_class = TransactionTypeSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
+
+
+class BalanceSheetView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id, year=None):
+        if year is None:
+            year = timezone.now().year
+
+        try:
+            annual_balance = AnnualBalance.objects.get(branch_id=branch_id, accounting_year=year)
+        except AnnualBalance.DoesNotExist:
+            return Response({"error": "Balance sheet for the specified year not found."}, status=404)
+
+        balance_sheet = {
+            "year": annual_balance.accounting_year,
+            "assets": {
+                "opening_balance": annual_balance.assets_opening_balance,
+                "closing_balance": annual_balance.assets_closing_balance,
+            },
+            "liabilities": {
+                "opening_balance": annual_balance.liability_opening_balance,
+                "closing_balance": annual_balance.liability_closing_balance,
+            },
+            "capital": {
+                "opening_balance": annual_balance.capital_opening_balance,
+                "closing_balance": annual_balance.capital_closing_balance,
+            },
+        }
+        return Response(balance_sheet)

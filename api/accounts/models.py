@@ -61,6 +61,9 @@ class BaseEntity(AbstractBaseUser, PermissionsMixin):
     tax_identifier_number = models.CharField(max_length=50, null=False, blank=False)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
+    # is_verified = models.BooleanField(default=False)
+    # email_token = models.CharField(max_length=100, null=True, blank=True)
+    # password_reset_token = models.CharField(max_length=100, null=True, blank=True)
 
     objects = BaseEntityManager()
 

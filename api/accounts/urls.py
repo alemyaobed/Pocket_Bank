@@ -6,7 +6,8 @@ from rest_framework_simplejwt.views import (
 )
 from .views import (
     EntityTypeViewSet, DepartmentViewSet, BaseEntityViewSet, BranchViewSet,
-    EmployeeViewSet, RoleViewSet, DocumentViewSet, NotificationViewSet
+    EmployeeViewSet, RoleViewSet, DocumentViewSet, NotificationViewSet,
+    ActivateAccountView, PasswordResetRequestView, PasswordResetConfirmView,
 )
 
 router = DefaultRouter()
@@ -22,6 +23,9 @@ router.register(r'notifications', NotificationViewSet)
 urlpatterns = [
     path('auth/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/activate/<uidb64>/<token>/', ActivateAccountView.as_view(), name='activate_account'),
+    path('auth/password_reset/', PasswordResetRequestView.as_view(), name='password_reset'),
+    path('auth/reset/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='reset_password_confirm'),
     # path('test-auth/', test_authentication, name='test_auth'),
     path('', include(router.urls)),
 ]
