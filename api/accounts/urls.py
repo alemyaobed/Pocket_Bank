@@ -6,7 +6,7 @@ from rest_framework_simplejwt.views import (
 )
 from .views import (
     EntityTypeViewSet, DepartmentViewSet, BaseEntityViewSet, BranchViewSet,
-    EmployeeViewSet, RoleViewSet, DocumentViewSet, NotificationViewSet,
+    EmployeeViewSet, MimicLoginView, RoleViewSet, DocumentViewSet, NotificationViewSet,
     ActivateAccountView, PasswordResetRequestView, PasswordResetConfirmView,
 )
 
@@ -26,6 +26,7 @@ urlpatterns = [
     path('auth/activate/<uidb64>/<token>/', ActivateAccountView.as_view(), name='activate_account'),
     path('auth/password_reset/', PasswordResetRequestView.as_view(), name='password_reset'),
     path('auth/reset/<uidb64>/<token>/', PasswordResetConfirmView.as_view(), name='reset_password_confirm'),
+    path('mimic-login/', MimicLoginView.as_view(), name='mimic_login'),
     # path('test-auth/', test_authentication, name='test_auth'),
     path('', include(router.urls)),
 ]

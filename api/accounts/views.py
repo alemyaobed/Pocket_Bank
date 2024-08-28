@@ -23,6 +23,8 @@ from django.urls import reverse
 from .serializers import PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from django.shortcuts import render
+from django.views.generic import TemplateView
 
 # @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
@@ -33,48 +35,8 @@ from drf_yasg import openapi
 #     return Response({"message": "You are authenticated!"})
 
 
-# class PasswordResetRequestView(APIView):
-#     permission_classes = [AllowAny]
-#     def post(self, request):
-#         email = request.data.get('email')
-#         if not email:
-#             return Response({"message": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
-#         try:
-#             user = BaseEntity.objects.get(email=email)
-#             token = default_token_generator.make_token(user)
-#             uid = urlsafe_base64_encode(force_bytes(user.pk))
-#             reset_link = request.build_absolute_uri(reverse('reset_password_confirm', args=[uid, token]))
-
-#             # Send password reset email
-#             subject = "Password Reset"
-#             message = f"Hi {user.username},\n\nPlease click the link below to reset your password:\n{reset_link}\n\nThank you!"
-#             send_mail(subject, message, 'noreply@example.com', [user.email])
-
-#             return Response({"message": "Password reset link sent."}, status=status.HTTP_200_OK)
-#         except BaseEntity.DoesNotExist:
-#             return Response({"message": "User with this email does not exist."}, status=status.HTTP_400_BAD_REQUEST)
-
-
-# class PasswordResetConfirmView(APIView):
-#     permission_classes = [AllowAny]
-#     def post(self, request, uidb64, token):
-#         try:
-#             uid = urlsafe_base64_decode(uidb64).decode()
-#             user = BaseEntity.objects.get(pk=uid)
-
-#             if user is not None and default_token_generator.check_token(user, token):
-#                 new_password = request.data.get('new_password')
-#                 if not new_password:
-#                     return Response({"message": "New password is required."}, status=status.HTTP_400_BAD_REQUEST)
-#                 user.set_password(new_password)
-#                 user.save()
-#                 return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
-#             else:
-#                 return Response({"message": "Invalid password reset link."}, status=status.HTTP_400_BAD_REQUEST)
-#         except (TypeError, ValueError, OverflowError, BaseEntity.DoesNotExist):
-#             user = None
-#             return Response({"message": "Invalid password reset link."}, status=status.HTTP_400_BAD_REQUEST)
-
+class MimicLoginView(TemplateView):
+    template_name = 'mimic_login.html'
 
 
 class PasswordResetRequestView(APIView):
@@ -149,12 +111,13 @@ class ActivateAccountView(APIView):
             if user is not None and default_token_generator.check_token(user, token):
                 user.is_active = True
                 user.save()
-                return Response({"message": "Account activated successfully!"}, status=status.HTTP_200_OK)
+                mimic_login_url = reverse('mimic_login') 
+                return render(request, 'activation_success.html', {'mimic_login_url': mimic_login_url})
             else:
-                return Response({"message": "Invalid activation link."}, status=status.HTTP_400_BAD_REQUEST)
+                return render(request, 'activation_error.html', status=400)
         except (TypeError, ValueError, OverflowError, BaseEntity.DoesNotExist):
             user = None
-            return Response({"message": "Invalid activation link."}, status=status.HTTP_400_BAD_REQUEST)
+            return render(request, 'activation_error.html', status=400)
 
 
 class EntityTypeViewSet(BaseViewSet):

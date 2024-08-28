@@ -41,7 +41,7 @@ class BaseEntitySerializer(ModelSerializer):
             'last_login', 'created_at', 'updated_at', 'tax_identifier_number',
             'first_name', 'last_name', 'password',
             ]
-        read_only_fields = ['id', 'last_login', 'created_at', 'updated_at', 'is_active']
+        read_only_fields = ['id', 'last_login', 'created_at', 'updated_at', 'is_active', 'is_staff']
         extra_kwargs = {
             'password': {'write_only': True}
         }
