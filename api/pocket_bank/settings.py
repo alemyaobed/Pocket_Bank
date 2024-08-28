@@ -99,7 +99,7 @@ else:
     # PRODUCTION: you must set the DATABASE_URL in your .env file
     DATABASES = {
         'default': dj_database_url.config(
-            default=None
+            default=config('DATABASE_URL', default=None)
         )
     }
 
