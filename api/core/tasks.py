@@ -33,11 +33,3 @@ def calculate_annual_balance():
         )
 
 
-@shared_task
-def add(x, y):
-    return x + y
-
-@shared_task
-def print_hello():
-    print("Hello, world!")
-

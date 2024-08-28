@@ -15,9 +15,5 @@ app.conf.beat_schedule = {
         'schedule': crontab(day_of_month='31', hour='23', minute='59'),
         'options': {'expires': 10.0},
     },
-    'print-hello-every-30-seconds': {
-        'task': 'core.tasks.print_hello',
-        'schedule': 30.0,  # Run every 30 seconds for demonstration purposes
-    },
 }
 app.autodiscover_tasks()
