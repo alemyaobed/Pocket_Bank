@@ -37,7 +37,7 @@ def calculate_annual_balance():
 def add(x, y):
     return x + y
 
-@shared_task(name='pocket_bank.tasks.print_hello')
+@shared_task
 def print_hello():
     print("Hello, world!")
 

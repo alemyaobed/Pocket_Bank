@@ -4,7 +4,7 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 
 from .models import (
-    Account, Asset, AssetType, CapitalType, Expense, Status, Transaction, Audit, Capital, TransactionDirection,
+    Account, Asset, AssetType, CapitalType, Expense, Investment, InvestmentType, Status, Transaction, Audit, Capital, TransactionDirection,
     TransactionType, Loan, LiabilityType, Liability, Income
     )
 # Handles account creation
@@ -352,4 +352,82 @@ def handle_transaction_creation(sender, instance, created, **kwargs):
 
         except Exception as e:
             print(f"An error occurred while handling transaction creation: {e}")
+            transaction.set_rollback(True)
+
+@receiver(post_save, sender=Investment)
+def handle_investment_creation(sender, instance, created, **kwargs):
+    if created:
+        try:
+            with transaction.atomic():
+                # Create a transaction record for the investment
+                transaction_record = Transaction.objects.create(
+                    transaction_type=TransactionType.objects.get(type_name='Investment'),
+                    initiated_by=instance.from_account.owner if instance.from_account else None,
+                    description=f'Investment of {instance.principal} from {instance.from_account} to {instance.to_account}',
+                    recipient_account=instance.to_account,
+                    sender_account=instance.from_account,
+                    recipient_account_balance=instance.to_account.current_balance + instance.principal if instance.to_account else None,
+                    sender_account_balance=instance.from_account.current_balance - instance.principal if instance.from_account else None,
+                    transaction_amount=instance.principal,
+                    status=Status.objects.get(status_name='Completed'),
+                    branch=instance.from_account.branch if instance.from_account else None,
+                    transaction_direction=TransactionDirection.objects.get(direction='Internal') if instance.from_account else None,
+                    investment=instance
+                )
+
+                # Update account balances
+                if instance.from_account:
+                    instance.from_account.current_balance -= instance.principal
+                    instance.from_account.save()
+
+                if instance.to_account:
+                    instance.to_account.current_balance += instance.principal
+                    instance.to_account.save()
+
+                # Update Capital
+                last_capital = Capital.objects.filter(branch=instance.from_account.branch if instance.from_account else None).last()
+                if last_capital:
+                    updated_balance = last_capital.updated_balance + instance.principal if instance.to_account else last_capital.updated_balance - instance.principal
+                else:
+                    updated_balance = instance.principal if instance.to_account else -instance.principal
+
+                Capital.objects.create(
+                    name='Investment Capital',
+                    branch=instance.from_account.branch if instance.from_account else instance.to_account.branch,
+                    capital_type=InvestmentType.objects.get(type_name='Investment Capital'),
+                    value=instance.principal,
+                    updated_balance=updated_balance,
+                    status=Status.objects.get(status_name='Completed'),
+                    description=f"Capital update from investment record '{instance.id}'"
+                )
+
+                # Update Asset
+                asset_type = AssetType.objects.get(type_name='Investment')  # Adjust asset type if necessary
+                last_asset = Asset.objects.filter(branch=instance.from_account.branch if instance.from_account else instance.to_account.branch, asset_type=asset_type).last()
+                if last_asset:
+                    updated_balance = last_asset.updated_balance + instance.principal if instance.to_account else last_asset.updated_balance - instance.principal
+                else:
+                    updated_balance = instance.principal if instance.to_account else -instance.principal
+
+                Asset.objects.create(
+                    branch=instance.from_account.branch if instance.from_account else instance.to_account.branch,
+                    name=f'Investment Asset for investment {instance.id}',
+                    value=instance.principal,
+                    updated_balance=updated_balance,
+                    asset_type=asset_type,
+                    status=Status.objects.get(status_name='Active'),
+                    description=f'Asset created for investment {instance.id}'
+                )
+
+                # Create an audit entry
+                Audit.objects.create(
+                    action_initiator=instance.from_account.owner if instance.from_account else instance.to_account.owner,
+                    action=f"Investment created: Investment ID {instance.id}, Amount: {instance.principal}, From Account: {instance.from_account}, To Account: {instance.to_account}",
+                    table_name='Investment, Transaction, Capital, Asset',
+                    old_value=None,
+                    new_value=str(instance),
+                )
+
+        except Exception as e:
+            print(f"An error occurred while handling investment creation: {e}")
             transaction.set_rollback(True)

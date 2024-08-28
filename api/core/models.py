@@ -9,16 +9,16 @@ class Account(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     account_name = models.CharField(max_length=40)
     account_number = models.CharField(max_length=20, unique=True)
-    owner = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE, null=False)
-    account_type = models.ForeignKey('AccountType', on_delete=models.CASCADE)
+    owner = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='owned_accounts')
+    account_type = models.ForeignKey('AccountType', on_delete=models.SET_NULL, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     closed_at = models.DateTimeField(blank=True, null=True)
     current_balance = models.FloatField(default=80)
-    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
-    created_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE, related_name='created_accounts')
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.SET_NULL, blank=True, null=True)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
+    created_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='created_accounts')
 
     def save(self, *args, **kwargs):
         if not self.account_number:
@@ -41,18 +41,18 @@ class Status(models.Model):
 
 class Transaction(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    sender_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='sent_transactions', null=True)
-    recipient_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='received_transactions', null=True)
-    transaction_type = models.ForeignKey('TransactionType', on_delete=models.CASCADE)
-    initiated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
+    sender_account = models.ForeignKey('Account', on_delete=models.SET_NULL, blank=True, null=True, related_name='sent_transactions')
+    recipient_account = models.ForeignKey('Account', on_delete=models.SET_NULL, blank=True, null=True, related_name='received_transactions')
+    transaction_type = models.ForeignKey('TransactionType', on_delete=models.SET_NULL, blank=True, null=True)
+    initiated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     recipient_account_balance = models.FloatField(null=True, blank=True)
     sender_account_balance = models.FloatField(null=True, blank=True)
     transaction_amount = models.FloatField()
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
     external_reference = models.CharField(max_length=100, blank=True, null=True)
-    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
-    transaction_direction = models.ForeignKey('TransactionDirection', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.SET_NULL, blank=True, null=True)
+    transaction_direction = models.ForeignKey('TransactionDirection', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):
@@ -91,9 +91,9 @@ class TransactionType(models.Model):
 
 class Loan(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    from_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='loans_given')
-    to_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='loans_received')
-    loan_type = models.ForeignKey('LoanType', on_delete=models.CASCADE)
+    from_account = models.ForeignKey('Account', on_delete=models.SET_NULL, blank=True, null=True, related_name='loans_given')
+    to_account = models.ForeignKey('Account', on_delete=models.SET_NULL, blank=True, null=True, related_name='loans_received')
+    loan_type = models.ForeignKey('LoanType', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     closed_at = models.DateTimeField(blank=True, null=True)
@@ -102,9 +102,9 @@ class Loan(models.Model):
     loan_amount = models.FloatField()
     fully_paid = models.BooleanField(default=False)
     current_loan_amount = models.FloatField()
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
-    loan_term = models.ForeignKey('LoanTerms', on_delete=models.CASCADE)
-    transaction = models.ForeignKey('Transaction', on_delete=models.SET_NULL, null=True)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
+    loan_term = models.ForeignKey('LoanTerms', on_delete=models.SET_NULL, blank=True, null=True)
+    transaction = models.ForeignKey('Transaction', on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return f'Loan {self.id}'
@@ -119,11 +119,11 @@ class LoanType(models.Model):
 
 class LoanTerms(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    entity = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
-    loan_type = models.ForeignKey('LoanType', on_delete=models.CASCADE)
+    entity = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True)
+    loan_type = models.ForeignKey('LoanType', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    interest_rate_type = models.ForeignKey('InterestRateType', on_delete=models.CASCADE)
+    interest_rate_type = models.ForeignKey('InterestRateType', on_delete=models.SET_NULL, blank=True, null=True)
     term_duration = models.IntegerField()  # Duration in months or years
     payment_frequency = models.CharField(max_length=20)  # E.g., Monthly, Quarterly
     late_fee = models.FloatField()
@@ -142,16 +142,16 @@ class InterestRateType(models.Model):
 
 class Investment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    from_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='investments_given')
-    to_account = models.ForeignKey('Account', on_delete=models.CASCADE, related_name='investments_received')
-    investment_type = models.ForeignKey('InvestmentType', on_delete=models.CASCADE)
+    from_account = models.ForeignKey('Account', on_delete=models.SET_NULL, blank=True, null=True, related_name='investments_given')
+    to_account = models.ForeignKey('Account', on_delete=models.SET_NULL, blank=True, null=True, related_name='investments_received')
+    investment_type = models.ForeignKey('InvestmentType', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     closed_at = models.DateTimeField(blank=True, null=True)
     interest_rate = models.FloatField()
     principal = models.FloatField()
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
-    transaction = models.ForeignKey('Transaction', on_delete=models.SET_NULL, null=True)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
+    transaction = models.ForeignKey('Transaction', on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return f'Investment {self.id}'
@@ -159,12 +159,12 @@ class Investment(models.Model):
 
 class LoanPayment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    paid_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
-    transaction = models.ForeignKey('Transaction', on_delete=models.CASCADE)
+    paid_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True)
+    transaction = models.ForeignKey('Transaction', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     payment_amount = models.FloatField()
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
-    loan = models.ForeignKey('Loan', on_delete=models.CASCADE)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
+    loan = models.ForeignKey('Loan', on_delete=models.SET_NULL, blank=True, null=True)
     interest_paid = models.FloatField()
     principal_paid = models.FloatField()
 
@@ -174,11 +174,11 @@ class LoanPayment(models.Model):
 
 class InvestmentCrediting(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    transaction = models.ForeignKey('Transaction', on_delete=models.CASCADE)
+    transaction = models.ForeignKey('Transaction', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     payment_amount = models.FloatField()
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
-    investment = models.ForeignKey('Investment', on_delete=models.CASCADE)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
+    investment = models.ForeignKey('Investment', on_delete=models.SET_NULL, blank=True, null=True)
     interest_earned = models.FloatField()
 
     def __str__(self):
@@ -186,7 +186,7 @@ class InvestmentCrediting(models.Model):
 
 
 class Audit(models.Model):
-    action_initiator = models.ForeignKey('accounts.BaseEntity', on_delete=models.CASCADE)
+    action_initiator = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True)
     action = models.CharField(max_length=50)
     table_name = models.CharField(max_length=50)
     old_value = models.TextField(blank=True, null=True)
@@ -199,13 +199,13 @@ class Audit(models.Model):
 
 class Asset(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.SET_NULL, blank=True, null=True)
     name = models.CharField(max_length=100)
     value = models.FloatField()
     updated_balance = models.FloatField()
-    asset_type = models.ForeignKey('AssetType', on_delete=models.CASCADE)
+    asset_type = models.ForeignKey('AssetType', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -214,13 +214,13 @@ class Asset(models.Model):
 
 class Capital(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.SET_NULL, blank=True, null=True)
     name = models.CharField(max_length=100)
     value = models.FloatField()
     updated_balance = models.FloatField()
-    capital_type = models.ForeignKey('CapitalType', on_delete=models.CASCADE)
+    capital_type = models.ForeignKey('CapitalType', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -229,13 +229,13 @@ class Capital(models.Model):
 
 class Liability(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.SET_NULL, blank=True, null=True)
     name = models.CharField(max_length=100)
     value = models.FloatField()
     updated_balance = models.FloatField()
-    liability_type = models.ForeignKey('LiabilityType', on_delete=models.CASCADE)
+    liability_type = models.ForeignKey('LiabilityType', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.ForeignKey('Status', on_delete=models.CASCADE)
+    status = models.ForeignKey('Status', on_delete=models.SET_NULL, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -253,7 +253,7 @@ class AnnualBalance(models.Model):
     accounting_year = models.CharField(max_length=10)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    branch = models.ForeignKey('accounts.Branch', on_delete=models.CASCADE)
+    branch = models.ForeignKey('accounts.Branch', on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
         return f'Annual Balance for {self.accounting_year}'
@@ -270,7 +270,7 @@ class AccountType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, null=True, related_name='account_type_updates')
+    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='account_type_updates')
 
     def __str__(self):
         return self.type_name
@@ -280,7 +280,7 @@ class InvestmentType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, null=True, related_name='investment_type_updates')
+    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='investment_type_updates')
 
     def __str__(self):
         return self.type_name
@@ -290,7 +290,7 @@ class AssetType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, null=True, related_name='asset_type_updates')
+    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='asset_type_updates')
 
     def __str__(self):
         return self.type_name
@@ -300,7 +300,7 @@ class CapitalType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, null=True, related_name='capital_type_updates')
+    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='capital_type_updates')
 
     def __str__(self):
         return self.type_name
@@ -310,7 +310,7 @@ class LiabilityType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, null=True, related_name='liability_type_updates')
+    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='liability_type_updates')
 
     def __str__(self):
         return self.type_name
@@ -318,7 +318,7 @@ class LiabilityType(models.Model):
 
 class Income(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    income_type = models.ForeignKey('IncomeType', on_delete=models.CASCADE)
+    income_type = models.ForeignKey('IncomeType', on_delete=models.SET_NULL, blank=True, null=True)
     received_at = models.DateTimeField()
     amount = models.FloatField()
     description = models.TextField(blank=True, null=True)
@@ -331,7 +331,7 @@ class IncomeType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, null=True, related_name='income_type_updates')
+    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='income_type_updates')
 
     def __str__(self):
         return self.type_name
@@ -339,7 +339,7 @@ class IncomeType(models.Model):
 
 class Expense(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    expense_type = models.ForeignKey('ExpenseType', on_delete=models.CASCADE)
+    expense_type = models.ForeignKey('ExpenseType', on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     amount = models.FloatField()
     description = models.TextField(blank=True, null=True)
@@ -352,7 +352,7 @@ class ExpenseType(models.Model):
     type_name = models.CharField(max_length=40)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, null=True, related_name='expense_type_updates')
+    updated_by = models.ForeignKey('accounts.BaseEntity', on_delete=models.SET_NULL, blank=True, null=True, related_name='expense_type_updates')
 
     def __str__(self):
         return self.type_name

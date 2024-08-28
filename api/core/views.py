@@ -50,6 +50,12 @@ class BaseViewSet(ModelViewSet):
         """
         instance.delete()
 
+    def get_serializer_context(self):
+        # Ensure that the user is available in the serializer context
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
 
 class AccountViewSet(BaseViewSet):
     """

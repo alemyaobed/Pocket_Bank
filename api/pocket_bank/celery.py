@@ -11,12 +11,13 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.conf.beat_schedule = {
     'calculate-annual-balance': {
-        'task': 'pocket_bank.tasks.calculate_annual_balance',  # Update the task path if necessary
-        'schedule': crontab(minute=0, hour=0, day_of_month='31', month_of_year='12'),
+        'task': 'core.tasks.calculate_annual_balance',  # Update the task path if necessary
+        'schedule': crontab(day_of_month='31', hour='23', minute='59'),
+        'options': {'expires': 10.0},
     },
     'print-hello-every-30-seconds': {
-        'task': 'pocket_bank.tasks.print_hello',
-        'schedule': 3.0,
+        'task': 'core.tasks.print_hello',
+        'schedule': 30.0,  # Run every 30 seconds for demonstration purposes
     },
 }
 app.autodiscover_tasks()
