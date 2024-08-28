@@ -26,13 +26,74 @@ from drf_yasg import openapi
 from django.shortcuts import render
 from django.views.generic import TemplateView
 
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def test_authentication(request):
-#     """
-#     A simple view to test authentication. Returns a success message if the user is authenticated.
-#     """
-#     return Response({"message": "You are authenticated!"})
+class ApiRootView(APIView):
+    '''A custom API Root View for accessing all enpoints '''
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return Response({
+                'entity-types': '/api/v1/entity-types/',
+                'branches': '/api/v1/branches/',
+                'departments': '/api/v1/departments/',
+                'base-entities': '/api/v1/base-entities/',
+                'employees': '/api/v1/employees/',
+                'roles': '/api/v1/roles/',
+                'documents': '/api/v1/documents/',
+                'notifications': '/api/v1/notifications/',
+                'accounts': '/api/v1/accounts/',
+                'account-types': '/api/v1/account-types/',
+                'annual-balances': '/api/v1/annual-balances/',
+                'assets': '/api/v1/assets/',
+                'asset-types': '/api/v1/asset-types/',
+                'audits': '/api/v1/audits/',
+                'capitals': '/api/v1/capitals/',
+                'capital-types': '/api/v1/capital-types/',
+                'expenses': '/api/v1/expenses/',
+                'expense-types': '/api/v1/expense-types/',
+                'incomes': '/api/v1/incomes/',
+                'income-types': '/api/v1/income-types/',
+                'interest-rate-types': '/api/v1/interest-rate-types/',
+                'investments': '/api/v1/investments/',
+                'investment-creditings': '/api/v1/investment-creditings/',
+                'investment-types': '/api/v1/investment-types/',
+                'liabilities': '/api/v1/liabilities/',
+                'liability-types': '/api/v1/liability-types/',
+                'loans': '/api/v1/loans/',
+                'loan-payments': '/api/v1/loan-payments/',
+                'loan-terms': '/api/v1/loan-terms/',
+                'loan-types': '/api/v1/loan-types/',
+                'statuses': '/api/v1/statuses/',
+                'transactions': '/api/v1/transactions/',
+                'transaction-directions': '/api/v1/transaction-directions/',
+                'transaction-types': '/api/v1/transaction-types/',
+                'auth-login': '/api/v1/auth/login/',
+                'auth-login-refresh': '/api/v1/auth/login/refresh/',
+                'auth-activate': '/api/v1/auth/activate/<uidb64>/<token>/',
+                'auth-password-reset': '/api/v1/auth/password_reset/',
+                'auth-reset-password-confirm': '/api/v1/auth/reset/<uidb64>/<token>/',
+                'mimic-login': '/api/v1/mimic-login/',
+            })
+        else:
+            return Response({
+                'message': 'Welcome to the Pocket Bank API. Please log in to view all endpoints.',
+                'login': '/api/v1/auth/login/',
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
+#####################################################################
+## Custom error handlers in production
+#####################################################################
+def custom_400(request, exception):
+    return render(request, '400.html', status=400)
+
+def custom_403(request, exception):
+    return render(request, '403.html', status=403)
+
+def custom_404(request, exception):
+    return render(request, '404.html', status=404)
+
+def custom_500(request):
+    return render(request, '500.html', status=500)
 
 
 class MimicLoginView(TemplateView):

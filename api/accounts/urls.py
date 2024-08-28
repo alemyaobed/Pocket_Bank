@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import (
@@ -5,10 +6,21 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from .views import (
-    EntityTypeViewSet, DepartmentViewSet, BaseEntityViewSet, BranchViewSet,
-    EmployeeViewSet, MimicLoginView, RoleViewSet, DocumentViewSet, NotificationViewSet,
-    ActivateAccountView, PasswordResetRequestView, PasswordResetConfirmView,
+    EntityTypeViewSet, DepartmentViewSet, BaseEntityViewSet, DocumentViewSet,
+    BranchViewSet, EmployeeViewSet, MimicLoginView, RoleViewSet,
+    NotificationViewSet, ActivateAccountView, PasswordResetRequestView,
+    PasswordResetConfirmView,
 )
+
+# Enable custom error handlers only in production
+if not settings.DEBUG:
+    from .views import custom_400, custom_403, custom_404, custom_500
+
+    handler400 = custom_400
+    handler403 = custom_403
+    handler404 = custom_404
+    handler500 = custom_500
+
 
 router = DefaultRouter()
 router.register(r'entity-types', EntityTypeViewSet)
