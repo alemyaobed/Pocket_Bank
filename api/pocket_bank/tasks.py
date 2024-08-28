@@ -3,7 +3,6 @@ from django.utils import timezone
 from django.db.models import Sum
 from core.models import Asset, Liability, Capital, AnnualBalance
 from accounts.models import Branch
-from pocket_bank.celery import app
 
 @shared_task
 def calculate_annual_balance():
@@ -40,10 +39,3 @@ def add(x, y):
 def print_hello():
     print("Hello, world!")
 
-# Register the task in the beat schedule
-app.conf.beat_schedule = {
-    'print-hello-every-30-seconds': {
-        'task': 'pocket_bank.tasks.print_hello',
-        'schedule': 30.0,
-    },
-}
