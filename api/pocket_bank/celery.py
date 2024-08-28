@@ -8,7 +8,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pocket_bank.settings')
 
 app = Celery('pocket_bank')
 app.config_from_object('django.conf:settings', namespace='CELERY')
-app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
     'calculate-annual-balance': {
@@ -17,6 +16,7 @@ app.conf.beat_schedule = {
     },
     'print-hello-every-30-seconds': {
         'task': 'pocket_bank.tasks.print_hello',
-        'schedule': 30.0,
+        'schedule': 3.0,
     },
 }
+app.autodiscover_tasks()

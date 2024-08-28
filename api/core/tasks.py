@@ -1,11 +1,13 @@
 from celery import shared_task
 from django.utils import timezone
 from django.db.models import Sum
-from core.models import Asset, Liability, Capital, AnnualBalance
-from accounts.models import Branch
+
 
 @shared_task
 def calculate_annual_balance():
+    from .models import Asset, Liability, Capital, AnnualBalance
+    from accounts.models import Branch
+
     current_year = timezone.now().year
     branches = Branch.objects.all()
 
@@ -35,7 +37,7 @@ def calculate_annual_balance():
 def add(x, y):
     return x + y
 
-@shared_task
+@shared_task(name='pocket_bank.tasks.print_hello')
 def print_hello():
     print("Hello, world!")
 
