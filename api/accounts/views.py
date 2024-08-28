@@ -106,7 +106,7 @@ class PasswordResetRequestView(APIView):
     @swagger_auto_schema(
         request_body=PasswordResetRequestSerializer,
         responses={
-            200: openapi.Response(description="Password reset link sent."),
+            200: openapi.Response(description="Password reset link sent to your email."),
             400: openapi.Response(description="User with this email does not exist or invalid request."),
         },
     )
@@ -125,7 +125,7 @@ class PasswordResetRequestView(APIView):
                 message = f"Hi {user.username},\n\nPlease click the link below to reset your password:\n{reset_link}\n\nThank you!"
                 send_mail(subject, message, 'noreply@example.com', [user.email])
 
-                return Response({"message": "Password reset link sent."}, status=status.HTTP_200_OK)
+                return Response({"message": "Password reset link sent to your email."}, status=status.HTTP_200_OK)
             except BaseEntity.DoesNotExist:
                 return Response({"message": "User with this email does not exist."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -143,23 +143,27 @@ class PasswordResetConfirmView(APIView):
     )
     def post(self, request, uidb64, token):
         serializer = PasswordResetConfirmSerializer(data=request.data)
-        if serializer.is_valid():
-            try:
-                uid = urlsafe_base64_decode(uidb64).decode()
-                user = BaseEntity.objects.get(pk=uid)
 
-                if user is not None and default_token_generator.check_token(user, token):
-                    new_password = serializer.validated_data['new_password']
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = BaseEntity.objects.get(pk=uid)
 
-                    user.set_password(new_password)
-                    user.save()
-                    return Response({"message": "Password reset successfully!"}, status=status.HTTP_200_OK)
-                else:
-                    return Response({"message": "Invalid password reset link."}, status=status.HTTP_400_BAD_REQUEST)
-            except (TypeError, ValueError, OverflowError, BaseEntity.DoesNotExist):
-                user = None
-                return Response({"message": "Invalid password reset link."}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            if user is not None and default_token_generator.check_token(user, token):
+                if not serializer.is_valid():
+                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                new_password = serializer.validated_data['new_password']
+
+                user.set_password(new_password)
+                user.save()
+
+                mimic_login_url = reverse('mimic_login')
+                return render(request, 'password_reset_success.html', {'mimic_login_url': mimic_login_url})
+            else:
+                return render(request, 'password_reset_error.html', status=400)
+        except (TypeError, ValueError, OverflowError, BaseEntity.DoesNotExist):
+            user = None
+            return render(request, 'password_reset_error.html', status=400)
+
 
 
 class ActivateAccountView(APIView):
@@ -172,7 +176,7 @@ class ActivateAccountView(APIView):
             if user is not None and default_token_generator.check_token(user, token):
                 user.is_active = True
                 user.save()
-                mimic_login_url = reverse('mimic_login') 
+                mimic_login_url = reverse('mimic_login')
                 return render(request, 'activation_success.html', {'mimic_login_url': mimic_login_url})
             else:
                 return render(request, 'activation_error.html', status=400)
